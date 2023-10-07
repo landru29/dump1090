@@ -16,6 +16,14 @@ var (
 	eventAircraft chan *Aircraft
 )
 
+func EventMessage() chan *Message {
+	return eventMessage
+}
+
+func EventAircraft() chan *Aircraft {
+	return eventAircraft
+}
+
 //export goSendMessage
 func goSendMessage(msg *C.modesMessage) {
 	if msg == nil {
@@ -38,7 +46,15 @@ func goSendAircraft(ac *C.aircraft) {
 	eventAircraft <- &aircraft
 }
 
-func Start(deviceIndex uint32, gain int, frequency uint32, enableAGC bool, filename string, callbackMessage func(*Message), callbackAircraft func(*Aircraft)) error {
+func Start(
+	deviceIndex uint32,
+	gain int,
+	frequency uint32,
+	enableAGC bool,
+	filename string,
+	evtMessage chan *Message,
+	evtAircraft chan *Aircraft,
+) error {
 	var filenameCString *C.char
 
 	eventMessage = make(chan *Message, eventSize)
@@ -47,14 +63,19 @@ func Start(deviceIndex uint32, gain int, frequency uint32, enableAGC bool, filen
 	go func() {
 		for {
 			msg := <-eventMessage
-			callbackMessage(msg)
+
+			if evtMessage != nil {
+				evtMessage <- msg
+			}
 		}
 	}()
 
 	go func() {
 		for {
 			ac := <-eventAircraft
-			callbackAircraft(ac)
+			if evtAircraft != nil {
+				evtAircraft <- ac
+			}
 		}
 	}()
 

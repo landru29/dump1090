@@ -3,3 +3,5 @@ Version: 1.0
 Architecture: amd64
 Maintainer: Cyrille Meichel <landru.ker@gmail.com>
 Description: Software to decode ADSB from RTL85 device.
+Depends: rtl-sdr (>= 0.6)
+

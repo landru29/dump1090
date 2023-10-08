@@ -2,17 +2,11 @@ package application
 
 import (
 	"context"
-	"fmt"
-	"sync"
-	"time"
+	"log"
 
 	"github.com/landru29/dump1090/internal/dump"
-)
-
-const (
-	cleanDelay time.Duration = time.Second * 10
-
-	outOfDateAC time.Duration = time.Minute
+	"github.com/landru29/dump1090/internal/serialize"
+	"github.com/landru29/dump1090/internal/transport"
 )
 
 type Config struct {
@@ -24,15 +18,16 @@ type Config struct {
 }
 
 type App struct {
-	cfg          *Config
-	aircraftPool map[uint32]*dump.Aircraft
-	mutex        sync.Mutex
+	cfg         *Config
+	formater    serialize.Serializer
+	tranporters []transport.Transporter
 }
 
-func New(cfg *Config) (*App, error) {
+func New(cfg *Config, formater serialize.Serializer, tranporters []transport.Transporter) (*App, error) {
 	return &App{
-		cfg:          cfg,
-		aircraftPool: map[uint32]*dump.Aircraft{},
+		cfg:         cfg,
+		formater:    formater,
+		tranporters: tranporters,
 	}, nil
 }
 
@@ -42,23 +37,20 @@ func (a *App) Start(ctx context.Context) error {
 		close(eventAircraft)
 	}()
 
-	go func(app *App) {
-		app.acCleaner(ctx)
-	}(a)
-
 	go func(acStream chan *dump.Aircraft, app *App) {
 		for {
 			ac := <-acStream
 
-			app.mutex.Lock()
-			app.aircraftPool[ac.Addr] = ac
-			app.mutex.Unlock()
-
-			fmt.Println(ac)
+			for _, transporter := range a.tranporters {
+				if err := transporter.Transport(ac); err != nil {
+					log.Println(err)
+				}
+			}
 		}
 	}(eventAircraft, a)
 
 	return dump.Start(
+		ctx,
 		a.cfg.DeviceIndex,
 		a.cfg.Gain,
 		a.cfg.Frequency,
@@ -67,23 +59,4 @@ func (a *App) Start(ctx context.Context) error {
 		nil,
 		eventAircraft,
 	)
-}
-
-func (a *App) acCleaner(ctx context.Context) {
-	ticker := time.NewTicker(cleanDelay)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			a.mutex.Lock()
-			for idx, ac := range a.aircraftPool {
-				if time.Since(ac.Seen) > outOfDateAC {
-					delete(a.aircraftPool, idx)
-				}
-			}
-			a.mutex.Unlock()
-		}
-	}
 }

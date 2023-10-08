@@ -10,7 +10,12 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/main.go",
-            "args": ["--fixture-file", "internal/dump/testdata/modes1.bin"]
+            "args": [
+                "--fixture-file", "internal/dump/testdata/modes1.bin",
+                "--format", "json",
+                "--transport", "http",
+                "--transport", "screen",
+            ]
         }
 
     ]

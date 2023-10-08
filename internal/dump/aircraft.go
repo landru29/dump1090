@@ -7,6 +7,7 @@ package dump
 import "C"
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func newAircraft(aircraft *C.aircraft) Aircraft {
 	return Aircraft{
 		Addr:       uint32(aircraft.addr),
 		HexAddr:    C.GoString(&aircraft.hexaddr[0]),
-		Flight:     C.GoString(&aircraft.flight[0]),
+		Flight:     strings.Trim(C.GoString(&aircraft.flight[0]), " "),
 		Altitude:   int(aircraft.altitude),
 		Speed:      int(aircraft.speed),
 		Track:      int(aircraft.track),

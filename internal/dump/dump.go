@@ -6,6 +6,7 @@ package dump
 */
 import "C"
 import (
+	"context"
 	"errors"
 )
 
@@ -47,6 +48,7 @@ func goSendAircraft(ac *C.aircraft) {
 }
 
 func Start(
+	ctx context.Context,
 	deviceIndex uint32,
 	gain int,
 	frequency uint32,
@@ -96,8 +98,7 @@ func Start(
 		return errors.New("there were errors")
 	}
 
-	close(eventMessage)
-	close(eventAircraft)
+	<-ctx.Done()
 
 	return nil
 }

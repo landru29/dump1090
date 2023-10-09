@@ -2,9 +2,10 @@
 package udp
 
 import (
+	"context"
 	"fmt"
 	"net"
-	"sync"
+	"strings"
 
 	"github.com/landru29/dump1090/internal/dump"
 	"github.com/landru29/dump1090/internal/serialize"
@@ -13,40 +14,31 @@ import (
 // Transporter is the udp transporter.
 type Transporter struct {
 	serializer serialize.Serializer
-	mutex      sync.Mutex
-
-	udpServer net.PacketConn
-
-	openConn []net.Addr
+	address    *net.UDPAddr
+	udpServer  net.PacketConn
 }
 
-func New(serializer serialize.Serializer, port int) (*Transporter, error) {
-	udpServer, err := net.ListenPacket("udp", fmt.Sprintf(":%d", port))
+func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
+	splitter := strings.Split(addr, ":")
+
+	udpServer, err := net.ListenPacket("udp", fmt.Sprintf(":%s", splitter[len(splitter)-1]))
 	if err != nil {
 		return nil, err
 	}
 
-	output := Transporter{
-		serializer: serializer,
-		udpServer:  udpServer,
-	}
-
 	go func() {
-		for {
-			buf := make([]byte, 1024)
-			_, addr, err := udpServer.ReadFrom(buf)
-			if err != nil {
-				continue
-			}
-
-			output.mutex.Lock()
-			output.openConn = append(output.openConn, addr)
-			output.mutex.Unlock()
-		}
+		<-ctx.Done()
+		_ = udpServer.Close()
 	}()
+
+	address, err := net.ResolveUDPAddr("udp4", addr)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Transporter{
 		serializer: serializer,
+		address:    address,
 		udpServer:  udpServer,
 	}, nil
 }
@@ -58,11 +50,7 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 		return err
 	}
 
-	t.mutex.Lock()
-	for _, addr := range t.openConn {
-		_, _ = t.udpServer.WriteTo(data, addr)
-	}
-	defer t.mutex.Unlock()
+	_, err = t.udpServer.WriteTo(data, t.address)
 
-	return nil
+	return err
 }

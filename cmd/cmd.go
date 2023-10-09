@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/landru29/dump1090/internal/application"
 	"github.com/landru29/dump1090/internal/serialize"
@@ -21,16 +17,18 @@ import (
 
 func RootCommand() *cobra.Command {
 	var (
-		app          *application.App
-		config       application.Config
-		outputFormat string
-		transportLst []string
+		app             *application.App
+		config          application.Config
+		outputFormat    string
+		udpAddr         string
+		httpAddr        string
+		transportScreen bool
 	)
 
 	output := map[string]serialize.Serializer{
 		"json": json.Serializer{},
 		"text": text.Serializer{},
-		"nmea": nmea.Serializer{},
+		"nmea": nmea.New(),
 	}
 
 	rootCommand := &cobra.Command{
@@ -47,23 +45,24 @@ func RootCommand() *cobra.Command {
 
 			transporters := []transport.Transporter{}
 
-			for _, name := range transportLst {
-				switch name {
-				case "screen":
-					transporters = append(transporters, screen.New(formater))
-				case "udp":
-					udpTrqnsport, err := udp.New(formater, 9000)
-					if err != nil {
-						return err
-					}
-					transporters = append(transporters, udpTrqnsport)
-				case "http":
-					httpTransport, err := http.New(cmd.Context(), formater, 8080)
-					if err != nil {
-						return err
-					}
-					transporters = append(transporters, httpTransport)
+			if httpAddr != "" {
+				httpTransport, err := http.New(cmd.Context(), formater, httpAddr)
+				if err != nil {
+					return err
 				}
+				transporters = append(transporters, httpTransport)
+			}
+
+			if udpAddr != "" {
+				udpTrqnsport, err := udp.New(cmd.Context(), formater, udpAddr)
+				if err != nil {
+					return err
+				}
+				transporters = append(transporters, udpTrqnsport)
+			}
+
+			if transportScreen {
+				transporters = append(transporters, screen.New(formater))
 			}
 
 			if len(transporters) == 0 {
@@ -75,17 +74,11 @@ func RootCommand() *cobra.Command {
 			return err
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithCancel(cmd.Context())
-			defer cancel()
-
-			if err := app.Start(ctx); err != nil {
+			if err := app.Start(cmd.Context()); err != nil {
 				return err
 			}
 
-			s := make(chan os.Signal, 1)
-
-			signal.Notify(s, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-			<-s
+			<-cmd.Context().Done()
 
 			return nil
 		},
@@ -97,7 +90,9 @@ func RootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().Uint32VarP(&config.Frequency, "frequency", "f", 1090000000, "frequency in Hz")
 	rootCommand.PersistentFlags().IntVarP(&config.Gain, "gain", "g", 0, "gain")
 	rootCommand.PersistentFlags().StringVarP(&outputFormat, "format", "", "text", "format (text|json|nmea)")
-	rootCommand.PersistentFlags().StringSliceVarP(&transportLst, "transport", "", []string{}, "Transporter (http/screen/udp)")
+	rootCommand.PersistentFlags().StringVarP(&udpAddr, "udp", "", "", "transmit data over udp (syntax: 'host:port'; ie: --udp 192.168.1.10:8000)")
+	rootCommand.PersistentFlags().StringVarP(&httpAddr, "http", "", "", "transmit data over http (syntax: 'host:port'; ie: --udp 0.0.0.0:8080)")
+	rootCommand.PersistentFlags().BoolVarP(&transportScreen, "screen", "", false, "Display output on the screen")
 
 	return rootCommand
 }

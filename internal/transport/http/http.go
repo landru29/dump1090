@@ -3,7 +3,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -26,7 +25,7 @@ type Transporter struct {
 	mutex        sync.Mutex
 }
 
-func New(ctx context.Context, serializer serialize.Serializer, port int) (*Transporter, error) {
+func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
 	output := Transporter{
 		aircraftPool: make(map[uint32]*dump.Aircraft),
 		serializer:   serializer,
@@ -37,11 +36,16 @@ func New(ctx context.Context, serializer serialize.Serializer, port int) (*Trans
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Addr:    addr,
 	}
 
 	go func() {
 		srv.ListenAndServe()
+	}()
+
+	go func() {
+		<-ctx.Done()
+		srv.Shutdown(ctx)
 	}()
 
 	go func(app *Transporter) {

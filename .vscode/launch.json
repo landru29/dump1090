@@ -13,8 +13,8 @@
             "args": [
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
                 "--format", "json",
-                "--transport", "http",
-                "--transport", "screen",
+                "--screen",
+                "--http", "0.0.0.0:8080",
             ]
         }
 

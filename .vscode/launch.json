@@ -5,7 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Launch",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": [
+                "--format", "json",
+                "--screen",
+                "--http", "0.0.0.0:8080",
+            ]
+        },
+        {
+            "name": "Launch Demo",
             "type": "go",
             "request": "launch",
             "mode": "auto",

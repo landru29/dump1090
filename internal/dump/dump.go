@@ -75,6 +75,9 @@ func Start(
 	go func() {
 		for {
 			ac := <-eventAircraft
+
+			//SetCountry(ac)
+
 			if evtAircraft != nil {
 				evtAircraft <- ac
 			}

@@ -16,6 +16,26 @@
                 "--screen",
                 "--http", "0.0.0.0:8080",
             ]
+        },
+        {
+            "name": "Foo",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": [
+                "foo",
+            ]
+        },
+        {
+            "name": "Bar",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/main.go",
+            "args": [
+                "bar",
+            ]
         }
 
     ]

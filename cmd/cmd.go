@@ -13,6 +13,9 @@ import (
 	"github.com/landru29/dump1090/internal/transport/screen"
 	"github.com/landru29/dump1090/internal/transport/udp"
 	"github.com/spf13/cobra"
+
+	parser "github.com/adrianmo/go-nmea"
+	ais "github.com/andmarios/aislib"
 )
 
 func RootCommand() *cobra.Command {
@@ -93,6 +96,54 @@ func RootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().StringVarP(&udpAddr, "udp", "", "", "transmit data over udp (syntax: 'host:port'; ie: --udp 192.168.1.10:8000)")
 	rootCommand.PersistentFlags().StringVarP(&httpAddr, "http", "", "", "transmit data over http (syntax: 'host:port'; ie: --udp 0.0.0.0:8080)")
 	rootCommand.PersistentFlags().BoolVarP(&transportScreen, "screen", "", false, "Display output on the screen")
+
+	rootCommand.AddCommand(&cobra.Command{
+		Use: "foo",
+		Run: func(cmd *cobra.Command, args []string) {
+			s, _ := parser.Parse("!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A")
+			out := s.(parser.VDMVDO)
+			fmt.Println(out)
+		},
+	})
+
+	rootCommand.AddCommand(&cobra.Command{
+		Use: "bar",
+		Run: func(cmd *cobra.Command, args []string) {
+			send := make(chan string, 1024*8)
+			receive := make(chan ais.Message, 1024*8)
+			failed := make(chan ais.FailedSentence, 1024*8)
+
+			done := make(chan bool)
+
+			go ais.Router(send, receive, failed)
+
+			go func() {
+				var message ais.Message
+				var problematic ais.FailedSentence
+				for {
+					select {
+					case message = <-receive:
+						switch message.Type {
+						case 1, 2, 3:
+							t, _ := ais.DecodeClassAPositionReport(message.Payload)
+							fmt.Println(t)
+						case 255:
+							done <- true
+						default:
+							fmt.Printf("=== Message Type %2d ===\n", message.Type)
+							fmt.Printf(" Unsupported type \n\n")
+						}
+					case problematic = <-failed:
+						fmt.Println(problematic)
+					}
+				}
+			}()
+
+			send <- "!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A"
+			close(send)
+			<-done
+		},
+	})
 
 	return rootCommand
 }

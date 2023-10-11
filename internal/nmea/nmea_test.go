@@ -2,11 +2,22 @@ package nmea_test
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/landru29/dump1090/internal/nmea"
 	"github.com/stretchr/testify/assert"
 )
+
+func displayBytes(t *testing.T, data []uint8) {
+	t.Helper()
+
+	for _, elt := range data {
+		fmt.Printf("%06b ", elt)
+	}
+
+	fmt.Println()
+}
 
 func TestCheckSum(t *testing.T) {
 	sentences := []string{
@@ -25,4 +36,39 @@ func TestCheckSum(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAddData(t *testing.T) {
+	for _, elt := range []struct {
+		expected    []uint8
+		input       any
+		bitPosition uint8
+		length      uint8
+	}{
+		{
+			expected:    []uint8{0b000111, 0b111000, 0, 0, 0, 0, 0, 0, 0, 0},
+			input:       uint8(63),
+			bitPosition: 3,
+			length:      6,
+		},
+	} {
+		fixture := elt
+
+		t.Run("", func(t *testing.T) {
+			encoded := make([]uint8, 10)
+
+			nmea.AddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
+
+			assert.Equal(t, fixture.expected, encoded)
+
+			displayBytes(t, encoded)
+		})
+	}
+}
+
+func TestEncode(t *testing.T) {
+	assert.Equal(t,
+		"123456789:;<=>?@ABCDEFGHIJKL",
+		nmea.Encode([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),
+	)
 }

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
+	"math"
 	"strings"
 	"unsafe"
 
@@ -53,49 +55,77 @@ func (f Fields) CheckSum() string {
 	return strings.ToUpper(hex.EncodeToString([]byte{output}))
 }
 
-func addBytes(dest []uint8, data []uint8, bitPosition uint32, length uint32) {
-	for idx := uint32(0); idx < length; idx++ {
-		readBit := (data[idx/byteSize] << (idx % byteSize)) & 0x80
+func addBytes(dest []uint8, data []uint8, bitPosition uint8, length uint8) {
+	startInputBit := uint8(len(data))*8 - length
+	for idx := uint8(0); idx < length; idx++ {
+		readBit := (data[(startInputBit+idx)/byteSize] << ((startInputBit + idx) % byteSize)) & 0x80
+		fmt.Printf("read byte %d, bit %d : %08b\n", (startInputBit+idx)/byteSize, (startInputBit+idx)%byteSize, readBit)
 
-		dest[(bitPosition+idx)%bitSize] |= (readBit >> (uint8((bitPosition+idx)/bitSize) + 2))
+		writeBit := readBit >> (uint8((bitPosition+idx)%bitSize) + 2)
+		dest[(bitPosition+idx)/bitSize] |= writeBit
+		fmt.Printf("  write to byte %d, bit %d: %08b\n", (bitPosition+idx)/bitSize, uint8((bitPosition+idx)%bitSize)+2, writeBit)
 	}
 }
 
-func AddData(dest []uint8, data any, bitPosition uint32, length uint32) (uint32, error) {
-	if length > uint32(unsafe.Sizeof(data)) {
+func AddData(dest []uint8, data any, bitPosition uint8, length uint8) (uint8, error) {
+	if length > uint8(unsafe.Sizeof(data)) {
 		return 0, ErrDataTooLong
 	}
 
+	var encoded []uint8
+
 	switch value := data.(type) {
-	case uint8:
-		addBytes(dest, []uint8{value}, bitPosition, length)
-		return length, nil
-	case uint16:
-		encoded := make([]uint8, 2)
+	case uint64:
+		encoded = make([]uint8, 8)
+		binary.BigEndian.PutUint64(encoded, value)
 
-		binary.BigEndian.AppendUint16(encoded, value)
-
-		addBytes(dest, encoded, bitPosition, length)
-
-		return length, nil
-	case uint32:
-		encoded := make([]uint8, 4)
-
-		binary.BigEndian.AppendUint32(encoded, value)
-
-		addBytes(dest, encoded, bitPosition, length)
-
-		return length, nil
 	case bool:
+		encoded = []uint8{0}
 		if value {
-			addBytes(dest, []byte{1}, bitPosition, 1)
+			encoded = []uint8{1}
 		}
 
-		return 1, nil
+	case int64:
+		encoded = make([]uint8, 8)
+		binary.BigEndian.PutUint64(encoded, uint64(value))
+
+	case uint8:
+		return AddData(dest, uint64(value), bitPosition, length)
+	case uint16:
+		return AddData(dest, uint64(value), bitPosition, length)
+	case uint32:
+		return AddData(dest, uint64(value), bitPosition, length)
+
 	case int8:
+		return AddData(dest, int64(value), bitPosition, length)
 	case int16:
+		return AddData(dest, int64(value), bitPosition, length)
 	case int32:
+		return AddData(dest, int64(value), bitPosition, length)
+
+	case float64:
+		return AddData(dest, math.Float64bits(value), bitPosition, length)
+	case float32:
+		return AddData(dest, math.Float64bits(float64(value)), bitPosition, length)
+
+	default:
+		return 0, ErrUnsupportedType
+
 	}
 
-	return 0, ErrUnsupportedType
+	addBytes(dest, encoded, bitPosition, length)
+
+	return length, nil
+}
+
+func Encode(input []uint8) string {
+	str := ""
+	for idx, elt := range input {
+		if (elt & 0x3f) > 0x27 {
+			str = str[:idx] + string(byte(elt)+56)
+		} else {
+			str = str[:idx] + string(byte(elt)+48)
+		}
+	}
+	return str
 }

@@ -57,7 +57,7 @@ func TestAddData(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			encoded := make([]uint8, 10)
 
-			nmea.AddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
+			nmea.PayloadAddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
 
 			assert.Equal(t, fixture.expected, encoded)
 
@@ -69,6 +69,6 @@ func TestAddData(t *testing.T) {
 func TestEncode(t *testing.T) {
 	assert.Equal(t,
 		"123456789:;<=>?@ABCDEFGHIJKL",
-		nmea.Encode([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),
+		nmea.EncodeBinaryPayload([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),
 	)
 }

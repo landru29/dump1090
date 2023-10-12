@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"math"
+	"reflect"
 	"strings"
 
 	"github.com/landru29/dump1090/internal/errors"
@@ -13,14 +15,6 @@ import (
 const (
 	bitSize  = 6 // nmea byte size
 	byteSize = 8 // real byte size
-
-	// fieldTalkerID            = 0
-	// fieldFragmentCount       = 1
-	// fieldFragmentNumber      = 2
-	// fieldSequencialMessageID = 3
-	// fieldRadioChannelCode    = 4
-	// fieldPayload             = 5
-	// fieldChecksum            = 6
 
 	ErrDataTooLong     errors.Error = "length is over data capacity"
 	ErrUnsupportedType errors.Error = "unsupported data type"
@@ -105,7 +99,7 @@ func PayloadAddData(dest []uint8, data any, bitPosition uint8, length uint8) (ui
 		return PayloadAddData(dest, math.Float64bits(float64(value)), bitPosition, length)
 
 	default:
-		return 0, ErrUnsupportedType
+		return 0, fmt.Errorf("%w: %s", ErrUnsupportedType, reflect.TypeOf(data).Kind().String())
 
 	}
 

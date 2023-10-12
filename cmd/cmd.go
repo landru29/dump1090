@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/landru29/dump1090/internal/application"
+	nmeaencoder "github.com/landru29/dump1090/internal/nmea"
 	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/landru29/dump1090/internal/serialize/json"
 	"github.com/landru29/dump1090/internal/serialize/nmea"
@@ -13,9 +14,6 @@ import (
 	"github.com/landru29/dump1090/internal/transport/screen"
 	"github.com/landru29/dump1090/internal/transport/udp"
 	"github.com/spf13/cobra"
-
-	parser "github.com/adrianmo/go-nmea"
-	ais "github.com/andmarios/aislib"
 )
 
 func RootCommand() *cobra.Command {
@@ -26,23 +24,36 @@ func RootCommand() *cobra.Command {
 		udpAddr         string
 		httpAddr        string
 		transportScreen bool
+		nmeaMid         uint16
+		nmeaVessel      string
 	)
-
-	output := map[string]serialize.Serializer{
-		"json": json.Serializer{},
-		"text": text.Serializer{},
-		"nmea": nmea.New(),
-	}
 
 	rootCommand := &cobra.Command{
 		Use:   "dump1090",
 		Short: "dump1090",
 		Long:  "dump1090 main command",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			var err error
+			var (
+				err      error
+				formater serialize.Serializer
+			)
 
-			formater := output[outputFormat]
-			if formater == nil {
+			switch outputFormat {
+			case "json":
+				formater = json.Serializer{}
+			case "text":
+				formater = text.Serializer{}
+			case "nmea":
+				vesselType, ok := map[string]nmea.VesselType{
+					"aircraft":   nmea.VesselTypeAircraft,
+					"helicopter": nmea.VesselTypeHelicopter,
+				}[nmeaVessel]
+				if !ok {
+					return fmt.Errorf("unknow vessel type %s", nmeaVessel)
+				}
+
+				formater = nmea.New(vesselType, nmeaMid)
+			default:
 				return fmt.Errorf("unknown format: %s", outputFormat)
 			}
 
@@ -96,52 +107,15 @@ func RootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().StringVarP(&udpAddr, "udp", "", "", "transmit data over udp (syntax: 'host:port'; ie: --udp 192.168.1.10:8000)")
 	rootCommand.PersistentFlags().StringVarP(&httpAddr, "http", "", "", "transmit data over http (syntax: 'host:port'; ie: --udp 0.0.0.0:8080)")
 	rootCommand.PersistentFlags().BoolVarP(&transportScreen, "screen", "", false, "Display output on the screen")
+	rootCommand.PersistentFlags().StringVarP(&nmeaVessel, "nmea-vessel", "", "aircraft", "MMSI vessel (aircraft|helicopter)")
+	rootCommand.PersistentFlags().Uint16VarP(&nmeaMid, "nmea-mid", "", 226, "MID (command 'mid' to list)")
 
 	rootCommand.AddCommand(&cobra.Command{
-		Use: "foo",
+		Use: "mid",
 		Run: func(cmd *cobra.Command, args []string) {
-			s, _ := parser.Parse("!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A")
-			out := s.(parser.VDMVDO)
-			fmt.Println(out)
-		},
-	})
-
-	rootCommand.AddCommand(&cobra.Command{
-		Use: "bar",
-		Run: func(cmd *cobra.Command, args []string) {
-			send := make(chan string, 1024*8)
-			receive := make(chan ais.Message, 1024*8)
-			failed := make(chan ais.FailedSentence, 1024*8)
-
-			done := make(chan bool)
-
-			go ais.Router(send, receive, failed)
-
-			go func() {
-				var message ais.Message
-				var problematic ais.FailedSentence
-				for {
-					select {
-					case message = <-receive:
-						switch message.Type {
-						case 1, 2, 3:
-							t, _ := ais.DecodeClassAPositionReport(message.Payload)
-							fmt.Println(t)
-						case 255:
-							done <- true
-						default:
-							fmt.Printf("=== Message Type %2d ===\n", message.Type)
-							fmt.Printf(" Unsupported type \n\n")
-						}
-					case problematic = <-failed:
-						fmt.Println(problematic)
-					}
-				}
-			}()
-
-			send <- "!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A"
-			close(send)
-			<-done
+			for _, elt := range nmeaencoder.MidList {
+				fmt.Printf("%d: %v %s\n", elt.MID, elt.Code, elt.Loc)
+			}
 		},
 	})
 

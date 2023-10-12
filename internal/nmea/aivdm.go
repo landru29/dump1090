@@ -62,11 +62,20 @@ const (
 	RateNoTurnInfo                   = -1.7e+308
 )
 
-func (p Payload) Binary() string {
+func (p Payload) Binary() (string, error) {
 	encoded := make([]uint8, 28)
-	PayloadAddData(encoded, uint8(1), 0, 6)
-	PayloadAddData(encoded, p.MMSI, 8, 30)
-	PayloadAddData(encoded, p.NavigationStatus, 38, 4)
+	if _, err := PayloadAddData(encoded, uint8(1), 0, 6); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.MMSI, 8, 30); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, uint8(p.NavigationStatus), 38, 4); err != nil {
+		return "", err
+	}
+
 	rot := 128.0
 	if p.RateOfTurn != RateNoTurnInfo {
 		rot = 4.733 * math.Sqrt(math.Abs(p.RateOfTurn))
@@ -82,33 +91,70 @@ func (p Payload) Binary() string {
 		}
 	}
 
-	PayloadAddData(encoded, int8(rot), 42, 8)
-	sog := uint16(math.Abs(p.SpeedOverGround * 10))
-	PayloadAddData(encoded, sog, 50, 10)
-	PayloadAddData(encoded, p.PositionAccuracy, 60, 1)
-	lng := (int64(p.Longitude*600000.0+324000000) % 216000000) - 108000000
-	PayloadAddData(encoded, lng, 61, 28)
-	lat := int64(p.Latitude * 600000.0)
-	PayloadAddData(encoded, lat, 89, 27)
-	cog := uint16(math.Abs(p.CourseOverGround * 10))
-	PayloadAddData(encoded, cog, 116, 12)
-	PayloadAddData(encoded, p.TrueHeading, 128, 9)
-	PayloadAddData(encoded, p.TimeStampSecond, 137, 6)
-	PayloadAddData(encoded, p.ManeuverIndicator, 143, 2)
-	PayloadAddData(encoded, p.RaimFlag, 148, 1)
-	PayloadAddData(encoded, p.RadioStatus, 149, 19)
+	if _, err := PayloadAddData(encoded, int8(rot), 42, 8); err != nil {
+		return "", err
+	}
 
-	return EncodeBinaryPayload(encoded)
+	sog := uint16(math.Abs(p.SpeedOverGround * 10))
+	if _, err := PayloadAddData(encoded, sog, 50, 10); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.PositionAccuracy, 60, 1); err != nil {
+		return "", err
+	}
+
+	lng := (int64(p.Longitude*600000.0+324000000) % 216000000) - 108000000
+	if _, err := PayloadAddData(encoded, lng, 61, 28); err != nil {
+		return "", err
+	}
+
+	lat := int64(p.Latitude * 600000.0)
+	if _, err := PayloadAddData(encoded, lat, 89, 27); err != nil {
+		return "", err
+	}
+
+	cog := uint16(math.Abs(p.CourseOverGround * 10))
+	if _, err := PayloadAddData(encoded, cog, 116, 12); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.TrueHeading, 128, 9); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.TimeStampSecond, 137, 6); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, uint8(p.ManeuverIndicator), 143, 2); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.RaimFlag, 148, 1); err != nil {
+		return "", err
+	}
+
+	if _, err := PayloadAddData(encoded, p.RadioStatus, 149, 19); err != nil {
+		return "", err
+	}
+
+	return EncodeBinaryPayload(encoded), nil
 }
 
-func (p Payload) Fields() Fields {
+func (p Payload) Fields() (Fields, error) {
+	binaryPayload, err := p.Binary()
+	if err != nil {
+		return nil, err
+	}
+
 	output := Fields{
 		[]byte("!AIVDM"),
 		[]byte("1"), // fragment count
 		[]byte("1"), // fragment number
 		[]byte{},    // sequential message ID
 		[]byte(p.RadioChannel),
-		[]byte(p.Binary()),
+		[]byte(binaryPayload),
 		[]byte("0*"),
 	}
 
@@ -116,5 +162,5 @@ func (p Payload) Fields() Fields {
 
 	output[len(output)-1] = append(output[len(output)-1], []byte(checkSum)...)
 
-	return output
+	return output, nil
 }

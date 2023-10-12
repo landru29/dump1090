@@ -3,6 +3,9 @@ package http
 
 import (
 	"context"
+	"embed"
+	"fmt"
+	"io/fs"
 	"net/http"
 	"sync"
 	"time"
@@ -11,6 +14,9 @@ import (
 	"github.com/landru29/dump1090/internal/dump"
 	"github.com/landru29/dump1090/internal/serialize"
 )
+
+//go:embed public/*
+var staticFiles embed.FS
 
 const (
 	cleanDelay time.Duration = time.Second * 10
@@ -23,12 +29,18 @@ type Transporter struct {
 	aircraftPool map[uint32]*dump.Aircraft
 	serializer   serialize.Serializer
 	mutex        sync.Mutex
+
+	staticHandler http.Handler
 }
 
 func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
+	subFS, _ := fs.Sub(staticFiles, "public")
+
 	output := Transporter{
 		aircraftPool: make(map[uint32]*dump.Aircraft),
 		serializer:   serializer,
+
+		staticHandler: http.FileServer(http.FS(subFS)),
 	}
 
 	router := mux.NewRouter()
@@ -40,7 +52,10 @@ func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Tr
 	}
 
 	go func() {
-		srv.ListenAndServe()
+		fmt.Printf("Serving on %s\n", addr)
+		if err := srv.ListenAndServe(); err != nil {
+			fmt.Printf("ERR: %s", err)
+		}
 	}()
 
 	go func() {
@@ -65,6 +80,11 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 }
 
 func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
+	if req.Header.Get("Accept") != t.serializer.MimeType() {
+		t.staticHandler.ServeHTTP(writer, req)
+		return
+	}
+
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 

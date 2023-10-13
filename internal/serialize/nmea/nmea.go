@@ -79,7 +79,7 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
-	return "application/nmea"
+	return "text/csv"
 }
 
 func (s Serializer) MMSI(addr uint32) uint32 {
@@ -93,4 +93,9 @@ func (s Serializer) MMSI(addr uint32) uint32 {
 	}
 
 	return out + addr%1000
+}
+
+// Serialize implements the Serialize.Serializer interface.
+func (s Serializer) String() string {
+	return "nmea"
 }

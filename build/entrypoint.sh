@@ -38,7 +38,7 @@ do
             cat /dump1090-${ARCH}/DEBIAN/control | sed -e "s/amd64/${ARCH}/g">/tmp/control
             cp /tmp/control /dump1090-${ARCH}/DEBIAN/control
             
-            go build -o /dump1090-${ARCH}/usr/local/bin/dumb1090 ./main.go
+            go build -o /dump1090-${ARCH}/usr/local/bin/dumb1090 ./cmd/dump1090/...
 
             dpkg-deb --build --root-owner-group /dump1090-${ARCH}
             cp /dump1090-${ARCH}.deb /deb/.

@@ -5,4 +5,5 @@ package serialize
 type Serializer interface {
 	Serialize(ac any) ([]byte, error)
 	MimeType() string
+	String() string
 }

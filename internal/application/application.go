@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/landru29/dump1090/internal/dump"
-	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/landru29/dump1090/internal/transport"
 )
 
@@ -19,14 +18,12 @@ type Config struct {
 
 type App struct {
 	cfg         *Config
-	formater    serialize.Serializer
 	tranporters []transport.Transporter
 }
 
-func New(cfg *Config, formater serialize.Serializer, tranporters []transport.Transporter) (*App, error) {
+func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	return &App{
 		cfg:         cfg,
-		formater:    formater,
 		tranporters: tranporters,
 	}, nil
 }

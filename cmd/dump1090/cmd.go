@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/landru29/dump1090/internal/serialize/json"
 	"github.com/landru29/dump1090/internal/serialize/nmea"
+	"github.com/landru29/dump1090/internal/serialize/none"
 	"github.com/landru29/dump1090/internal/serialize/text"
 	"github.com/landru29/dump1090/internal/transport"
 	"github.com/landru29/dump1090/internal/transport/http"
@@ -16,16 +17,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RootCommand() *cobra.Command {
+func rootCommand() *cobra.Command {
 	var (
 		app             *application.App
 		config          application.Config
-		outputFormat    string
-		udpAddr         string
-		httpAddr        string
-		transportScreen bool
+		httpConf        httpConfig
+		transportScreen string
 		nmeaMid         uint16
 		nmeaVessel      string
+		udpConf         udpConfig
 	)
 
 	rootCommand := &cobra.Command{
@@ -34,56 +34,59 @@ func RootCommand() *cobra.Command {
 		Long:  "dump1090 main command",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				err      error
-				formater serialize.Serializer
+				err error
 			)
 
-			switch outputFormat {
-			case "json":
-				formater = json.Serializer{}
-			case "text":
-				formater = text.Serializer{}
-			case "nmea":
-				vesselType, ok := map[string]nmea.VesselType{
-					"aircraft":   nmea.VesselTypeAircraft,
-					"helicopter": nmea.VesselTypeHelicopter,
-				}[nmeaVessel]
-				if !ok {
-					return fmt.Errorf("unknow vessel type %s", nmeaVessel)
-				}
+			serializers := map[string]serialize.Serializer{}
 
-				formater = nmea.New(vesselType, nmeaMid)
-			default:
-				return fmt.Errorf("unknown format: %s", outputFormat)
+			vesselType, ok := map[string]nmea.VesselType{
+				"aircraft":   nmea.VesselTypeAircraft,
+				"helicopter": nmea.VesselTypeHelicopter,
+			}[nmeaVessel]
+			if !ok {
+				return fmt.Errorf("unknow vessel type %s", nmeaVessel)
+			}
+
+			availableSerializers := []serialize.Serializer{
+				none.Serializer{},
+				json.Serializer{},
+				text.Serializer{},
+				nmea.New(vesselType, nmeaMid),
+			}
+
+			for _, serializer := range availableSerializers {
+				serializers[serializer.String()] = serializer
 			}
 
 			transporters := []transport.Transporter{}
 
-			if httpAddr != "" {
-				httpTransport, err := http.New(cmd.Context(), formater, httpAddr)
+			if httpConf.addr != "" {
+				httpTransport, err := http.New(cmd.Context(), httpConf.addr, httpConf.apiPath, availableSerializers)
 				if err != nil {
 					return err
 				}
 				transporters = append(transporters, httpTransport)
+
+				cmd.Printf("API on http://%s%s\n", httpConf.addr, httpConf.apiPath)
 			}
 
-			if udpAddr != "" {
-				udpTrqnsport, err := udp.New(cmd.Context(), formater, udpAddr)
+			if udpConf.addr != "" {
+				udpTrqnsport, err := udp.New(cmd.Context(), serializers[udpConf.format], udpConf.addr)
 				if err != nil {
 					return err
 				}
 				transporters = append(transporters, udpTrqnsport)
 			}
 
-			if transportScreen {
-				transporters = append(transporters, screen.New(formater))
+			if transportScreen != "" {
+				transporters = append(transporters, screen.New(serializers[transportScreen]))
 			}
 
 			if len(transporters) == 0 {
 				transporters = append(transporters, screen.Transporter{})
 			}
 
-			app, err = application.New(&config, formater, transporters)
+			app, err = application.New(&config, transporters)
 
 			return err
 		},
@@ -103,10 +106,9 @@ func RootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().BoolVarP(&config.EnableAGC, "enable-agc", "a", false, "Enable AGC")
 	rootCommand.PersistentFlags().Uint32VarP(&config.Frequency, "frequency", "f", 1090000000, "frequency in Hz")
 	rootCommand.PersistentFlags().IntVarP(&config.Gain, "gain", "g", 0, "gain")
-	rootCommand.PersistentFlags().StringVarP(&outputFormat, "format", "", "text", "format (text|json|nmea)")
-	rootCommand.PersistentFlags().StringVarP(&udpAddr, "udp", "", "", "transmit data over udp (syntax: 'host:port'; ie: --udp 192.168.1.10:8000)")
-	rootCommand.PersistentFlags().StringVarP(&httpAddr, "http", "", "", "transmit data over http (syntax: 'host:port'; ie: --udp 0.0.0.0:8080)")
-	rootCommand.PersistentFlags().BoolVarP(&transportScreen, "screen", "", false, "Display output on the screen")
+	rootCommand.PersistentFlags().VarP(&udpConf, "udp", "", "transmit data over udp (syntax: 'format@host:port'; ie: --udp json@192.168.1.10:8000)")
+	rootCommand.PersistentFlags().VarP(&httpConf, "http", "", "transmit data over http (syntax: 'host:port/path'; ie: --http 0.0.0.0:8080/api)")
+	rootCommand.PersistentFlags().StringVarP(&transportScreen, "screen", "", "text", "format to display output on the screen (json|nmea|text|none)")
 	rootCommand.PersistentFlags().StringVarP(&nmeaVessel, "nmea-vessel", "", "aircraft", "MMSI vessel (aircraft|helicopter)")
 	rootCommand.PersistentFlags().Uint16VarP(&nmeaMid, "nmea-mid", "", 226, "MID (command 'mid' to list)")
 

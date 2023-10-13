@@ -3,9 +3,7 @@ package udp
 
 import (
 	"context"
-	"fmt"
 	"net"
-	"strings"
 
 	"github.com/landru29/dump1090/internal/dump"
 	"github.com/landru29/dump1090/internal/serialize"
@@ -13,39 +11,54 @@ import (
 
 // Transporter is the udp transporter.
 type Transporter struct {
-	serializer serialize.Serializer
-	address    *net.UDPAddr
-	udpServer  net.PacketConn
+	//address *net.UDPAddr
+	// udpServer net.PacketConn
+	udpServer net.Conn
+	formater  serialize.Serializer
 }
 
-func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
-	splitter := strings.Split(addr, ":")
+func New(ctx context.Context, formater serialize.Serializer, addr string) (*Transporter, error) {
+	// splitter := strings.Split(addr, ":")
 
-	udpServer, err := net.ListenPacket("udp", fmt.Sprintf(":%s", splitter[len(splitter)-1]))
+	// p := make([]byte, 2048)
+	udpServer, err := net.Dial("udp", addr)
 	if err != nil {
 		return nil, err
 	}
+
+	// _, err = bufio.NewReader(conn).Read(p)
+	// if err == nil {
+	// 	fmt.Printf("%s\n", p)
+	// } else {
+	// 	fmt.Printf("Some error %v\n", err)
+	// }
+	// conn.Close()
+
+	// udpServer, err := net.ListenPacket("udp", fmt.Sprintf(":%s", splitter[len(splitter)-1]))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	go func() {
 		<-ctx.Done()
 		_ = udpServer.Close()
 	}()
 
-	address, err := net.ResolveUDPAddr("udp4", addr)
-	if err != nil {
-		return nil, err
-	}
+	// address, err := net.ResolveUDPAddr("udp4", addr)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return &Transporter{
-		serializer: serializer,
-		address:    address,
-		udpServer:  udpServer,
+		//address:   address,
+		formater:  formater,
+		udpServer: udpServer,
 	}, nil
 }
 
 // Transport implements the transport.Transporter interface.
 func (t *Transporter) Transport(ac *dump.Aircraft) error {
-	data, err := t.serializer.Serialize(ac)
+	data, err := t.formater.Serialize(ac)
 	if err != nil {
 		return err
 	}
@@ -54,7 +67,9 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 		return nil
 	}
 
-	_, err = t.udpServer.WriteTo(data, t.address)
+	data = append(data, '\n')
+
+	_, err = t.udpServer.Write(data)
 
 	return err
 }

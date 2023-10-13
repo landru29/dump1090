@@ -44,3 +44,8 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 func (s Serializer) MimeType() string {
 	return "text/plain"
 }
+
+// Serialize implements the Serialize.Serializer interface.
+func (s Serializer) String() string {
+	return "text"
+}

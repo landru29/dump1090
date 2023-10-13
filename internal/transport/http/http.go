@@ -27,24 +27,27 @@ const (
 // Transporter is the http transporter.
 type Transporter struct {
 	aircraftPool map[uint32]*dump.Aircraft
-	serializer   serialize.Serializer
 	mutex        sync.Mutex
-
-	staticHandler http.Handler
+	formaters    map[string]serialize.Serializer
 }
 
-func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
+func New(ctx context.Context, addr string, apiPath string, formaters []serialize.Serializer) (*Transporter, error) {
 	subFS, _ := fs.Sub(staticFiles, "public")
 
 	output := Transporter{
 		aircraftPool: make(map[uint32]*dump.Aircraft),
-		serializer:   serializer,
+		formaters:    map[string]serialize.Serializer{},
+	}
 
-		staticHandler: http.FileServer(http.FS(subFS)),
+	for _, elt := range formaters {
+		output.formaters[elt.MimeType()] = elt
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", output.serveData)
+	router.HandleFunc(apiPath, output.serveData)
+	if apiPath != "/" {
+		router.PathPrefix("/").Handler(http.FileServer(http.FS(subFS)))
+	}
 
 	srv := &http.Server{
 		Handler: router,
@@ -80,20 +83,27 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 }
 
 func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
-	if req.Header.Get("Accept") != t.serializer.MimeType() {
-		t.staticHandler.ServeHTTP(writer, req)
-		return
+	requestedMimeType := req.Header.Get("Accept")
+
+	formater, ok := t.formaters[requestedMimeType]
+	if !ok {
+		formater = t.formaters["application/json"]
 	}
 
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	output, err := t.serializer.Serialize(t.aircraftPool)
+	dataArray := []*dump.Aircraft{}
+	for _, elt := range t.aircraftPool {
+		dataArray = append(dataArray, elt)
+	}
+
+	output, err := formater.Serialize(dataArray)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 	}
 
-	writer.Header().Set("content-type", t.serializer.MimeType())
+	writer.Header().Set("content-type", requestedMimeType)
 	writer.Write([]byte(output))
 }
 

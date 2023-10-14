@@ -6,7 +6,46 @@ html,body{
     height: 100%;
 }
 
+body {
+    position: relative;
+}
+
 #map {
     height: 100%;
     width: 100%;
+}
+
+#panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 20%;
+    background-color: #ffffffa0;
+    z-index: 999;
+    padding: 20px
+}
+
+.icao {
+    padding: 4px;
+    display: inline-block;
+}
+
+.flight {
+    padding: 4px;
+    display: inline-block;
+}
+
+.altitude {
+    padding: 4px;
+    display: inline-block;
+}
+
+.speed {
+    padding: 4px;
+    display: inline-block;
+}
+
+.highlight {
+    background-color: #77b2ff;
 }

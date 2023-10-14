@@ -6,6 +6,10 @@ This is a fork from the project https://github.com/antirez/dump1090 from Salvato
 
 The code has been cleaned to remove all net features, and has been wrapped in goland code.
 
+This code uses:
+* Leaflet: https://leafletjs.com/
+* leaflet Rotated Marker: https://github.com/bbecquet/Leaflet.RotatedMarker 
+
 ## Prerequisites
 
 * You must have a sane installation of Docker.

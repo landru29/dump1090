@@ -1,18 +1,23 @@
 const xmlhttp = new XMLHttpRequest();
+const aircraftDict = {};
+const aircraftMarkerIcon = L.icon({
+	iconUrl: "ac.png",
+	iconSize: [64,64],
+	iconAnchor: [32,32]
+});
+
+const selectedAircraftMarkerIcon = L.icon({
+	iconUrl: "acs.png",
+	iconSize: [64,64],
+	iconAnchor: [32,32]
+});
 
 window.addEventListener('load', function() {
-	const aircraftDict = {};
-
-	const acMarkerIcon = L.icon({
-		iconUrl: "ac.png",
-		iconSize: [64,64],
-		iconAnchor: [32,32]
-	});
-
-    const map = L.map('map').setView([48.12, -1.86], 13);
+    const map = L.map('map').setView([48.12, -1.86], 9);
 
 	const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		maxZoom: 19,
+		minZoom: 3,
 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 	}).addTo(map);
 
@@ -34,14 +39,16 @@ window.addEventListener('load', function() {
 					container.id = `icao_${elt.icao}`;
 					aircraftDict[elt.icao].container = container;
 					acContainer.appendChild(container);
+					container.addEventListener('click', () => clickAircraft(map, elt.icao));
 				}
 	
 				if (aircraftDict[elt.icao].lat != 0 && aircraftDict[elt.icao].lon != 0) {
 					const coord = new L.LatLng(aircraftDict[elt.icao].lat, aircraftDict[elt.icao].lon);
+					aircraftDict[elt.icao].coordinate = coord;
 					if (aircraftDict[elt.icao].marker == undefined) {
-						aircraftDict[elt.icao].marker = L.marker(coord, {icon: acMarkerIcon, icao: elt.icao}).addTo(map);
+						aircraftDict[elt.icao].marker = L.marker(coord, {icon: aircraftMarkerIcon, icao: elt.icao}).addTo(map);
 						aircraftDict[elt.icao].marker.on('click', ()=>{
-							clickAircraft(elt.icao);
+							clickAircraft(map, elt.icao);
 						});
 					}
 					
@@ -50,6 +57,7 @@ window.addEventListener('load', function() {
 				}
 			});
 			
+			// clean outdated aircrafts.
 			Object.keys(aircraftDict).forEach((key)=>{
 				if (aircraftDict[key].seen.getTime() < new Date().getTime()- 120000) {
 					acContainer.removeChild(aircraftDict[key].container);
@@ -57,6 +65,7 @@ window.addEventListener('load', function() {
 				}
 			});
 	
+			// refresh aircraft data in the table.
 			Object.keys(aircraftDict).forEach((key)=>{
 				const icao = document.createElement('span');
 				icao.className='icao';
@@ -88,16 +97,21 @@ window.addEventListener('load', function() {
 	this.setInterval(aircraftGetter(), 2000);
 });
 
-function clickAircraft(icao) {
+function clickAircraft(map, icao) {
 	const line = document.getElementById(`icao_${icao}`);
 	const isHighlight = (hasClass(line, 'highlight'));
 	
 	for (const child of document.getElementById("ac").children) {
-		child.className = 'container'
+		child.className = 'aircraft'
 	}
 
+	Object.keys(aircraftDict).forEach((ac) => aircraftDict[ac].marker.setIcon(aircraftMarkerIcon));
+
 	if (!isHighlight) {
-		line.className = 'container highlight';
+		line.className = 'aircraft highlight';
+		aircraftDict[icao].marker.setIcon(selectedAircraftMarkerIcon);
+
+		map.panTo(aircraftDict[icao].coordinate);
 	}
 }
 
@@ -110,7 +124,7 @@ function hasClass(elt, className) {
 
 function loadAircrafts() {
 	return new Promise((resolve, reject) => {
-		xmlhttp.open('GET', '/api', true);
+		xmlhttp.open('GET', window.apiPath, true);
 		xmlhttp.onreadystatechange = () => {
 			if (xmlhttp.readyState == 4) {
 				if(Math.floor(xmlhttp.status/100) == 2) {

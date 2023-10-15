@@ -27,25 +27,38 @@ body {
 }
 
 .icao {
-    padding: 4px;
+    padding: 1%;
     display: inline-block;
+    width: 23%;
+}
+
+.aircraft {
+    cursor: pointer;
+}
+
+.aircraft.highlight {
+    background-color: #77b2ff;
+}
+
+.aircraft:hover {
+    background-color: #94efff;
 }
 
 .flight {
-    padding: 4px;
+    padding: 1%;
     display: inline-block;
+    width: 23%;
 }
 
 .altitude {
-    padding: 4px;
+    padding: 1%;
     display: inline-block;
+    width: 23%;
 }
 
 .speed {
-    padding: 4px;
+    padding: 1%;
     display: inline-block;
+    width: 23%;
 }
 
-.highlight {
-    background-color: #77b2ff;
-}

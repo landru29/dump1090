@@ -45,6 +45,9 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 
 	router := mux.NewRouter()
 	router.HandleFunc(apiPath, output.serveData)
+	router.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("window.apiPath='%s'", apiPath)))
+	})
 	if apiPath != "/" {
 		router.PathPrefix("/").Handler(http.FileServer(http.FS(subFS)))
 	}

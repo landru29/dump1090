@@ -1,0 +1,64 @@
+html,body{
+    font-family: Arial, Helvetica, sans-serif;
+
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+
+body {
+    position: relative;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+#panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 20%;
+    background-color: #ffffffa0;
+    z-index: 999;
+    padding: 20px
+}
+
+.icao {
+    padding: 1%;
+    display: inline-block;
+    width: 23%;
+}
+
+.aircraft {
+    cursor: pointer;
+}
+
+.aircraft.highlight {
+    background-color: #77b2ff;
+}
+
+.aircraft:hover {
+    background-color: #94efff;
+}
+
+.flight {
+    padding: 1%;
+    display: inline-block;
+    width: 23%;
+}
+
+.altitude {
+    padding: 1%;
+    display: inline-block;
+    width: 23%;
+}
+
+.speed {
+    padding: 1%;
+    display: inline-block;
+    width: 23%;
+}
+

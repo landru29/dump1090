@@ -1,24 +1,20 @@
-// Package json is the json serializer.
-package json
+// Package none is the empty serializer.
+package none
 
-import (
-	"encoding/json"
-)
-
-// Serializer is the json serializer.
+// Serializer is the none serializer.
 type Serializer struct{}
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) Serialize(ac any) ([]byte, error) {
-	return json.Marshal(ac)
+	return nil, nil
 }
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
-	return "application/json"
+	return ""
 }
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) String() string {
-	return "json"
+	return "none"
 }

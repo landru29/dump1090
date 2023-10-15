@@ -20,6 +20,10 @@ func (t Transporter) Transport(ac *dump.Aircraft) error {
 		return err
 	}
 
+	if len(data) == 0 {
+		return nil
+	}
+
 	fmt.Printf("%s\n", string(data))
 
 	return nil

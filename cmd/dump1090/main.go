@@ -5,8 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/landru29/dump1090/cmd"
 )
 
 func main() {
@@ -23,7 +21,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	if err := cmd.RootCommand().ExecuteContext(ctx); err != nil {
+	if err := rootCommand().ExecuteContext(ctx); err != nil {
 		panic(err)
 	}
 }

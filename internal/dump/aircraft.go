@@ -12,8 +12,8 @@ import (
 )
 
 type Aircraft struct {
-	Addr     uint32    `json:"-"`        /* ICAO address */
-	HexAddr  string    `json:"hex"`      /* Printable ICAO address */
+	Addr     uint32    `json:"icao"`     /* ICAO address */
+	HexAddr  string    `json:"icao_hex"` /* Printable ICAO address */
 	Flight   string    `json:"flight"`   /* Flight number */
 	Altitude int       `json:"altitude"` /* Altitude */
 	Speed    int       `json:"speed"`    /* Velocity computed from EW and NS components. */
@@ -31,6 +31,7 @@ type Aircraft struct {
 
 	OddCPRtime  time.Time `json:"-"`
 	EvenCPRtime time.Time `json:"-"`
+	CountryCode string    `json:"country_code"`
 }
 
 func (a Aircraft) String() string {

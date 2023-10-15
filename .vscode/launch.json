@@ -5,18 +5,63 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Dump1090",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/main.go",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
             "args": [
-                "--fixture-file", "internal/dump/testdata/modes1.bin",
-                "--format", "json",
-                "--screen",
+                "--screen json",
                 "--http", "0.0.0.0:8080",
             ]
+        },
+        {
+            "name": "Demo json",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--fixture-file", "internal/dump/testdata/modes1.bin",
+                "--screen", "json",
+                "--http", "0.0.0.0:7080",
+            ]
+        },
+        {
+            "name": "Demo nmea",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--fixture-file", "internal/dump/testdata/modes1.bin",
+                "--screen", "nmea",
+            ]
+        },
+        {
+            "name": "Demo udp",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--fixture-file", "internal/dump/testdata/modes1.bin",
+                "--udp", "nmea@127.0.0.1:2000",
+            ]
+        },
+        {
+            "name": "UDP bind",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/udp_bind",
+            "args": [
+                "-p", "2000"
+            ]
         }
-
     ]
 }

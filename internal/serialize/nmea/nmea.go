@@ -3,118 +3,99 @@ package nmea
 
 import (
 	"bytes"
-	"encoding/hex"
+
+	"github.com/landru29/dump1090/internal/dump"
+
+	nmeaencoder "github.com/landru29/dump1090/internal/nmea"
 )
 
-/*
-	Payload (https://gpsd.gitlab.io/gpsd/AIVDM.html#_types_1_2_and_3_position_report_class_a)
-
-	| Bits    | Size  |   Description               |
-	|---------+-------+-----------------------------|
-	| 0-5     | 6     |   Message Type              |
-	| 6-7     | 2     |   Repeat Indicator          |
-	| 8-37    | 30    |   MMSI                      |
-	| 38-41   | 4     |   Navigation Status         |
-	| 42-49   | 8     |   Rate of Turn (ROT)        |
-	| 50-59   | 10    |   Speed Over Ground (SOG)   |
-	| 60-60   | 1     |   Position Accuracy         |
-	| 61-88   | 28    |   Longitude                 |
-	| 89-115  | 27    |   Latitude                  |
-	| 116-127 | 12    |   Course Over Ground (COG)  |
-	| 128-136 | 9     |   True Heading (HDG)        |
-	| 137-142 | 6     |   Time Stamp                |
-	| 143-144 | 2     |   Maneuver Indicator        |
-	| 145-147 | 3     |   Spare                     |
-	| 148-148 | 1     |   RAIM flag                 |
-	| 149-167 | 19    |   Radio status              |
-
-*/
+type VesselType int
 
 const (
-	preambule = "!"
-
-	talkerID = "AIVDM"
-
-	fieldSize = 7
-
-	fieldTalkerID            = 0
-	fieldFragmentCount       = 1
-	fieldFragmentNumber      = 2
-	fieldSequencialMessageID = 3
-	fieldRadioChannelCode    = 4
-	fieldPayload             = 5
-	fieldChecksum            = 6
+	VesselTypeAircraft = iota
+	VesselTypeHelicopter
 )
-
-type fields [][]byte
-
-type payload struct {
-	MessageType       uint8  // 6 bits
-	RepeatIndicator   uint8  // 2 bits
-	MMSI              uint32 // 30 bits
-	NavigationStatus  uint8  // 4 bits
-	RateOfTurn        int    // 8 bits
-	SpeedOverGround   uint16 // 10 bits
-	PositionAccuracy  uint8  // 1 bits
-	Longitude         int32  // 28 bits
-	Latitude          int32  // 27 bits
-	CourseOverGround  uint16 // 12 bits
-	TrueHeading       uint16 // 9 bits
-	TimeStamp         uint8  // 6 bits
-	ManeuverIndicator uint32 // 2 bits
-	Spare             uint8  // 3 bits
-	RaimFlag          uint8  // 1 bits
-	RadioStatus       uint8  // 19 bits
-}
 
 // Serializer is the nmea serializer.
 type Serializer struct {
-	converter map[byte]byte
+	mmsiVessel VesselType
+	mid        uint16
 }
 
-func New() *Serializer {
-	output := Serializer{
-		converter: map[byte]byte{},
+func New(mmsiVessel VesselType, mid uint16) *Serializer {
+	return &Serializer{
+		mmsiVessel: mmsiVessel,
+		mid:        mid,
 	}
-
-	for idx := byte(0); idx < 0x40; idx++ {
-		if idx < 0x28 {
-			output.converter[idx] = idx + 0x30
-		} else {
-			output.converter[idx] = idx + 0x38
-		}
-	}
-
-	return &output
 }
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) Serialize(ac any) ([]byte, error) {
-	message := make(fields, fieldSize)
-	message[fieldTalkerID] = []byte(talkerID)
-	message[fieldFragmentCount] = []byte("1")
-	message[fieldFragmentNumber] = []byte("1")
-	message[fieldSequencialMessageID] = nil
-	message[fieldRadioChannelCode] = []byte("B")
+	if ac == nil {
+		return nil, nil
+	}
 
-	message[fieldChecksum] = []byte("0*" + message.checkSum())
+	switch aircraft := ac.(type) {
+	case dump.Aircraft:
+		return s.Serialize([]*dump.Aircraft{&aircraft})
+	case *dump.Aircraft:
+		return s.Serialize([]*dump.Aircraft{aircraft})
+	case []dump.Aircraft:
+		out := make([]*dump.Aircraft, len(aircraft))
+		for idx := range aircraft {
+			out[idx] = &aircraft[idx]
+		}
+		return s.Serialize(out)
+	case []*dump.Aircraft:
+		output := [][]byte{}
+		for _, ac := range aircraft {
+			if ac.Lon != 0 || ac.Lat != 0 {
+				fields, err := nmeaencoder.Payload{
+					MMSI:             s.MMSI(ac.Addr),
+					Longitude:        ac.Lon,
+					Latitude:         ac.Lat,
+					SpeedOverGround:  float64(ac.Speed) / 10,
+					PositionAccuracy: true,
+					CourseOverGround: float64(ac.Track),
+					TrueHeading:      uint16(ac.Track),
+					NavigationStatus: nmeaencoder.NavigationStatusAground,
+				}.Fields()
+				if err != nil {
+					return nil, err
+				}
+				output = append(output, []byte(fields.String()))
+			}
+		}
 
-	return bytes.Join([][]byte{[]byte(preambule), bytes.Join(message, []byte(","))}, nil), nil
+		if len(output) == 0 {
+			return nil, nil
+		}
+
+		return bytes.Join(output, []byte("\n")), nil
+	}
+
+	return nil, nil
 }
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
-	return "text/plain"
+	return "text/csv"
 }
 
-func (f fields) checkSum() string {
-	output := byte(0)
+func (s Serializer) MMSI(addr uint32) uint32 {
+	out := uint32(s.mid%1000)*10000 + 10000000
 
-	data := bytes.Join(f, []byte(","))
-
-	for _, byteElement := range data {
-		output ^= byteElement
+	switch s.mmsiVessel {
+	case VesselTypeAircraft:
+		out += 1000
+	case VesselTypeHelicopter:
+		out += 5000
 	}
 
-	return hex.EncodeToString([]byte{output})
+	return out + addr%1000
+}
+
+// Serialize implements the Serialize.Serializer interface.
+func (s Serializer) String() string {
+	return "nmea"
 }

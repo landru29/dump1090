@@ -3,6 +3,9 @@ package http
 
 import (
 	"context"
+	"embed"
+	"fmt"
+	"io/fs"
 	"net/http"
 	"sync"
 	"time"
@@ -11,6 +14,9 @@ import (
 	"github.com/landru29/dump1090/internal/dump"
 	"github.com/landru29/dump1090/internal/serialize"
 )
+
+//go:embed public/*
+var staticFiles embed.FS
 
 const (
 	cleanDelay time.Duration = time.Second * 10
@@ -21,18 +27,30 @@ const (
 // Transporter is the http transporter.
 type Transporter struct {
 	aircraftPool map[uint32]*dump.Aircraft
-	serializer   serialize.Serializer
 	mutex        sync.Mutex
+	formaters    map[string]serialize.Serializer
 }
 
-func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Transporter, error) {
+func New(ctx context.Context, addr string, apiPath string, formaters []serialize.Serializer) (*Transporter, error) {
+	subFS, _ := fs.Sub(staticFiles, "public")
+
 	output := Transporter{
 		aircraftPool: make(map[uint32]*dump.Aircraft),
-		serializer:   serializer,
+		formaters:    map[string]serialize.Serializer{},
+	}
+
+	for _, elt := range formaters {
+		output.formaters[elt.MimeType()] = elt
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", output.serveData)
+	router.HandleFunc(apiPath, output.serveData)
+	router.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("window.apiPath='%s'", apiPath)))
+	})
+	if apiPath != "/" {
+		router.PathPrefix("/").Handler(http.FileServer(http.FS(subFS)))
+	}
 
 	srv := &http.Server{
 		Handler: router,
@@ -40,7 +58,10 @@ func New(ctx context.Context, serializer serialize.Serializer, addr string) (*Tr
 	}
 
 	go func() {
-		srv.ListenAndServe()
+		fmt.Printf("Serving on %s\n", addr)
+		if err := srv.ListenAndServe(); err != nil {
+			fmt.Printf("ERR: %s", err)
+		}
 	}()
 
 	go func() {
@@ -65,15 +86,27 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 }
 
 func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
+	requestedMimeType := req.Header.Get("Accept")
+
+	formater, ok := t.formaters[requestedMimeType]
+	if !ok {
+		formater = t.formaters["application/json"]
+	}
+
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	output, err := t.serializer.Serialize(t.aircraftPool)
+	dataArray := []*dump.Aircraft{}
+	for _, elt := range t.aircraftPool {
+		dataArray = append(dataArray, elt)
+	}
+
+	output, err := formater.Serialize(dataArray)
 	if err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 	}
 
-	writer.Header().Set("content-type", t.serializer.MimeType())
+	writer.Header().Set("content-type", requestedMimeType)
 	writer.Write([]byte(output))
 }
 

@@ -32,6 +32,8 @@ type Aircraft struct {
 	OddCPRtime  time.Time `json:"-"`
 	EvenCPRtime time.Time `json:"-"`
 	CountryCode string    `json:"country_code"`
+
+	Message Message `json:"-"`
 }
 
 func (a Aircraft) String() string {
@@ -39,7 +41,7 @@ func (a Aircraft) String() string {
 		a.HexAddr, a.Flight, a.Altitude, a.Speed, a.Track, a.Lat, a.Lon, a.Seen)
 }
 
-func newAircraft(aircraft *C.aircraft) Aircraft {
+func newAircraft(aircraft *C.aircraft, msg *C.modesMessage) Aircraft {
 	return Aircraft{
 		Addr:       uint32(aircraft.addr),
 		HexAddr:    C.GoString(&aircraft.hexaddr[0]),
@@ -57,5 +59,6 @@ func newAircraft(aircraft *C.aircraft) Aircraft {
 		Lon:        float64(aircraft.lon),
 		//OddCPRtime:  aircraft.odd_cprtime,
 		//EvenCPRtime: aircraft.even_cprtime,
+		Message: newMessage(msg),
 	}
 }

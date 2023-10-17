@@ -153,7 +153,7 @@ struct {
 
 aircraft *receiveData(modesMessage *mm);
 void modesSendMessage(modesMessage *mm);
-void modesSendAircraft(aircraft *ac);
+void modesSendAircraft(modesMessage *mm, aircraft *ac);
 void useModesMessage(modesMessage *mm);
 int fixSingleBitErrors(unsigned char *msg, int bits);
 int fixTwoBitsErrors(unsigned char *msg, int bits);
@@ -1464,7 +1464,7 @@ good_preamble:
 void useModesMessage(modesMessage *mm) {
     if (!Modes.stats && (Modes.check_crc == 0 || mm->crcok)) {
         aircraft *ac = receiveData(mm);
-        modesSendAircraft(ac);
+        modesSendAircraft(mm, ac);
         // displayModesMessage(mm);
     }
 
@@ -1787,8 +1787,8 @@ void modesSendMessage(modesMessage *mm) {
     goSendMessage(mm);
 }
 
-void modesSendAircraft(aircraft *ac) {
-    goSendAircraft(ac);
+void modesSendAircraft(modesMessage *mm, aircraft *ac) {
+    goSendAircraft(mm, ac);
 }
     
 int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t enableAGC, char* filename) {

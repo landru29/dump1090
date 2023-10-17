@@ -29,8 +29,12 @@ func (t Transporter) Transport(ac *dump.Aircraft) error {
 	return nil
 }
 
-func New(serializer serialize.Serializer) *Transporter {
+func New(serializer serialize.Serializer) (*Transporter, error) {
+	if serializer == nil {
+		return nil, fmt.Errorf("no valid formater")
+	}
+
 	return &Transporter{
 		serializer: serializer,
-	}
+	}, nil
 }

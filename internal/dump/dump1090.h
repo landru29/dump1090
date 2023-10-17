@@ -81,6 +81,6 @@ typedef struct Aircraft{
 } aircraft;
 
 extern void goSendMessage(modesMessage*);
-extern void goSendAircraft(aircraft*);
+extern void goSendAircraft(modesMessage*, aircraft*);
 
 #endif

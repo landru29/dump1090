@@ -5,21 +5,21 @@ import (
 	"strings"
 )
 
-type udpConfig struct {
+type protocolConfig struct {
 	addr   string
 	format string
 }
 
 const defaultUDPformat = "nmea"
 
-func (u *udpConfig) String() string {
-	return fmt.Sprintf("%s@%s", u.format, u.addr)
+func (p *protocolConfig) String() string {
+	return fmt.Sprintf("%s@%s", p.format, p.addr)
 }
 
-func (u *udpConfig) Set(str string) error {
+func (p *protocolConfig) Set(str string) error {
 	splitter := strings.Split(str, "@")
 	if len(splitter) > 1 {
-		*u = udpConfig{
+		*p = protocolConfig{
 			format: splitter[0],
 			addr:   strings.Join(splitter[1:], "@"),
 		}
@@ -27,7 +27,7 @@ func (u *udpConfig) Set(str string) error {
 		return nil
 	}
 
-	*u = udpConfig{
+	*p = protocolConfig{
 		format: defaultUDPformat,
 		addr:   str,
 	}
@@ -35,6 +35,6 @@ func (u *udpConfig) Set(str string) error {
 	return nil
 }
 
-func (u *udpConfig) Type() string {
-	return "udp configuration"
+func (p *protocolConfig) Type() string {
+	return "protocol configuration"
 }

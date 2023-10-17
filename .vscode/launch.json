@@ -12,8 +12,19 @@
             "program": "${workspaceFolder}/cmd/dump1090",
             "cwd": "${workspaceFolder}",
             "args": [
-                "--screen json",
+                "--screen", "basestation",
                 "--http", "0.0.0.0:8080",
+            ]
+        },
+        {
+            "name": "Serializers",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "serializers",
             ]
         },
         {
@@ -27,6 +38,18 @@
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
                 "--screen", "json",
                 "--http", "0.0.0.0:7080",
+            ]
+        },
+        {
+            "name": "Demo base station",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--fixture-file", "internal/dump/testdata/modes1.bin",
+                "--screen", "base-station",
             ]
         },
         {
@@ -58,9 +81,32 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/udp_bind",
+            "program": "${workspaceFolder}/cmd/udp",
             "args": [
+                "bind",
                 "-p", "2000"
+            ]
+        },
+        {
+            "name": "TCP dial",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/tcp",
+            "args": [
+                "dial",
+                "-a", "127.0.0.1:2000"
+            ]
+        },
+        {
+            "name": "TCP bind",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/tcp",
+            "args": [
+                "bind",
+                "--port", "30003"
             ]
         }
     ]

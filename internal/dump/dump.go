@@ -37,12 +37,12 @@ func goSendMessage(msg *C.modesMessage) {
 }
 
 //export goSendAircraft
-func goSendAircraft(ac *C.aircraft) {
+func goSendAircraft(msg *C.modesMessage, ac *C.aircraft) {
 	if ac == nil {
 		return
 	}
 
-	aircraft := newAircraft(ac)
+	aircraft := newAircraft(ac, msg)
 
 	eventAircraft <- &aircraft
 }

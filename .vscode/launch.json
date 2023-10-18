@@ -49,7 +49,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
-                "--screen", "base-station",
+                "--tcp", "bind>base-station@0.0.0.0:2000",
             ]
         },
         {
@@ -73,7 +73,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
-                "--udp", "nmea@127.0.0.1:2000",
+                "--udp", "dial>nmea@127.0.0.1:2000",
             ]
         },
         {

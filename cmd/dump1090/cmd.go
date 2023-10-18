@@ -26,10 +26,11 @@ func rootCommand() *cobra.Command {
 		transportScreen      string
 		nmeaMid              uint16
 		nmeaVessel           string
-		udpConf              protocolConfig
-		tcpConf              protocolConfig
 		availableSerializers []serialize.Serializer
 	)
+
+	udpConf := net.NewProtocol("udp")
+	tcpConf := net.NewProtocol("tcp")
 
 	rootCommand := &cobra.Command{
 		Use:   "dump1090",
@@ -74,16 +75,16 @@ func rootCommand() *cobra.Command {
 				cmd.Printf("API on http://%s%s\n", httpConf.addr, httpConf.apiPath)
 			}
 
-			if udpConf.addr != "" {
-				udpTransport, err := net.New(cmd.Context(), serializers[udpConf.format], udpConf.addr, "udp")
+			if udpConf.IsValid() {
+				udpTransport, err := net.New(cmd.Context(), serializers, udpConf)
 				if err != nil {
 					return err
 				}
 				transporters = append(transporters, udpTransport)
 			}
 
-			if tcpConf.addr != "" {
-				tcpTransport, err := net.New(cmd.Context(), serializers[tcpConf.format], tcpConf.addr, "tcp")
+			if tcpConf.IsValid() {
+				tcpTransport, err := net.New(cmd.Context(), serializers, tcpConf)
 				if err != nil {
 					return err
 				}
@@ -123,10 +124,10 @@ func rootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().BoolVarP(&config.EnableAGC, "enable-agc", "a", false, "Enable AGC")
 	rootCommand.PersistentFlags().Uint32VarP(&config.Frequency, "frequency", "f", 1090000000, "frequency in Hz")
 	rootCommand.PersistentFlags().IntVarP(&config.Gain, "gain", "g", 0, "gain")
-	rootCommand.PersistentFlags().VarP(&udpConf, "udp", "", "transmit data over udp (syntax: 'format@host:port'; ie: --udp json@192.168.1.10:8000)")
-	rootCommand.PersistentFlags().VarP(&tcpConf, "tcp", "", "transmit data over tcp (syntax: 'format@host:port'; ie: --tcp json@192.168.1.10:8000)")
+	rootCommand.PersistentFlags().VarP(&udpConf, "udp", "", "transmit data over udp (syntax: 'direction>format@host:port'; ie: --udp dial>json@192.168.1.10:8000)")
+	rootCommand.PersistentFlags().VarP(&tcpConf, "tcp", "", "transmit data over tcp (syntax: 'direction>format@host:port'; ie: --tcp bind>json@192.168.1.10:8000)")
 	rootCommand.PersistentFlags().VarP(&httpConf, "http", "", "transmit data over http (syntax: 'host:port/path'; ie: --http 0.0.0.0:8080/api)")
-	rootCommand.PersistentFlags().StringVarP(&transportScreen, "screen", "", "text", "format to display output on the screen (json|nmea|text|none)")
+	rootCommand.PersistentFlags().StringVarP(&transportScreen, "screen", "", "", "format to display output on the screen (json|nmea|text|none)")
 	rootCommand.PersistentFlags().StringVarP(&nmeaVessel, "nmea-vessel", "", "aircraft", "MMSI vessel (aircraft|helicopter)")
 	rootCommand.PersistentFlags().Uint16VarP(&nmeaMid, "nmea-mid", "", 226, "MID (command 'mid' to list)")
 

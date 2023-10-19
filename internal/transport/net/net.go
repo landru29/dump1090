@@ -17,14 +17,19 @@ import (
 
 // Transporter is the udp transporter.
 type Transporter struct {
-	clients  []io.WriteCloser
-	formater serialize.Serializer
-	mutex    sync.Mutex
+	clients   []io.WriteCloser
+	formater  serialize.Serializer
+	mutex     sync.Mutex
+	outWriter io.Writer
 }
 
-func New(ctx context.Context, formater map[string]serialize.Serializer, conf ProtocolConfig) (*Transporter, error) {
+func New(ctx context.Context, formater map[string]serialize.Serializer, conf ProtocolConfig, outputLog io.Writer) (*Transporter, error) {
 	if formater == nil {
 		return nil, fmt.Errorf("no valid formater")
+	}
+
+	if outputLog == nil {
+		outputLog = io.Discard
 	}
 
 	serial, found := formater[conf.format]
@@ -33,26 +38,30 @@ func New(ctx context.Context, formater map[string]serialize.Serializer, conf Pro
 	}
 
 	output := &Transporter{
-		formater: serial,
+		formater:  serial,
+		outWriter: outputLog,
 	}
 
 	switch conf.direction {
 	case protocolBind:
-		return output, output.Bind(ctx, conf.protocolType, conf.addr)
+		return output, output.Bind(ctx, conf.protocolType, conf.addr, outputLog)
 	case protocolDial:
-		return output, output.Dial(ctx, conf.protocolType, conf.addr)
+		return output, output.Dial(ctx, conf.protocolType, conf.addr, outputLog)
 	}
 
 	return nil, fmt.Errorf("unknown %s: specify 'dial' or 'bind'", conf.direction)
 }
 
-func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string) error {
+func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
 	splitter := strings.Split(addr, ":")
+	port := splitter[len(splitter)-1]
 
-	tcpServer, err := net.Listen("tcp", fmt.Sprintf(":%s", splitter[len(splitter)-1]))
+	tcpServer, err := net.Listen(string(pType), fmt.Sprintf(":%s", port))
 	if err != nil {
 		return err
 	}
+
+	fmt.Fprintf(outputLog, "Listening %s on port %s\n", strings.ToUpper(string(pType)), port)
 
 	go func() {
 		for {
@@ -71,6 +80,8 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string)
 					return
 				}
 
+				fmt.Fprintf(outputLog, "Accept connection from %s\n", conn.RemoteAddr())
+
 				t.mutex.Lock()
 				t.clients = append(t.clients, conn)
 				t.mutex.Unlock()
@@ -81,7 +92,9 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string)
 	return nil
 }
 
-func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string) error {
+func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
+	fmt.Fprintf(outputLog, "Dialing %s to %s\n", strings.ToUpper(string(pType)), addr)
+
 	server, err := nativenet.Dial(string(pType), addr)
 	if err != nil {
 		return err
@@ -96,6 +109,8 @@ func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string)
 	defer t.mutex.Unlock()
 
 	t.clients = append(t.clients, server)
+
+	fmt.Fprintf(outputLog, "Connection accepted\n")
 
 	return nil
 }
@@ -120,10 +135,12 @@ func (t *Transporter) Transport(ac *dump.Aircraft) error {
 		globalErr error
 		hasError  bool
 	)
+
 	for _, client := range t.clients {
 		_, err = client.Write(data)
 
 		if err != nil {
+			fmt.Fprintf(t.outWriter, "ERR: %s\n", err)
 			hasError = true
 			globalErr = errors.Wrap(globalErr, err.Error())
 		}

@@ -56,6 +56,7 @@ func Start(
 	filename string,
 	evtMessage chan *Message,
 	evtAircraft chan *Aircraft,
+	loop bool,
 ) error {
 	var filenameCString *C.char
 
@@ -88,6 +89,12 @@ func Start(
 		filenameCString = C.CString(filename)
 	}
 
+	var loopInt C.int
+
+	if loop {
+		loopInt = C.int(1)
+	}
+
 	if ret := C.startProcess(
 		C.uint32_t(deviceIndex),
 		C.int(gain),
@@ -97,6 +104,7 @@ func Start(
 			false: 0,
 		}[enableAGC]),
 		filenameCString,
+		loopInt,
 	); ret != 0 {
 		return errors.New("there were errors")
 	}

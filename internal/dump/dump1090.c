@@ -1791,7 +1791,7 @@ void modesSendAircraft(modesMessage *mm, aircraft *ac) {
     goSendAircraft(mm, ac);
 }
     
-int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t enableAGC, char* filename) {
+int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t enableAGC, char* filename, int loop) {
     modesInitConfig();
 
     Modes.enable_agc = enableAGC;
@@ -1812,6 +1812,8 @@ int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t ena
         Modes.filename = (char*)(malloc(strlen(filename)+1));
         strcpy(Modes.filename, filename);
     }
+
+    Modes.loop = loop;
 
      /* Initialization */
     modesInit();

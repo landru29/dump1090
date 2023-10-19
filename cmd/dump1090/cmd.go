@@ -27,6 +27,7 @@ func rootCommand() *cobra.Command {
 		nmeaMid              uint16
 		nmeaVessel           string
 		availableSerializers []serialize.Serializer
+		loop                 bool
 	)
 
 	udpConf := net.NewProtocol("udp")
@@ -76,7 +77,7 @@ func rootCommand() *cobra.Command {
 			}
 
 			if udpConf.IsValid() {
-				udpTransport, err := net.New(cmd.Context(), serializers, udpConf)
+				udpTransport, err := net.New(cmd.Context(), serializers, udpConf, cmd.OutOrStdout())
 				if err != nil {
 					return err
 				}
@@ -84,7 +85,7 @@ func rootCommand() *cobra.Command {
 			}
 
 			if tcpConf.IsValid() {
-				tcpTransport, err := net.New(cmd.Context(), serializers, tcpConf)
+				tcpTransport, err := net.New(cmd.Context(), serializers, tcpConf, cmd.OutOrStdout())
 				if err != nil {
 					return err
 				}
@@ -109,7 +110,7 @@ func rootCommand() *cobra.Command {
 			return err
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := app.Start(cmd.Context()); err != nil {
+			if err := app.Start(cmd.Context(), loop); err != nil {
 				return err
 			}
 
@@ -130,6 +131,7 @@ func rootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().StringVarP(&transportScreen, "screen", "", "", "format to display output on the screen (json|nmea|text|none)")
 	rootCommand.PersistentFlags().StringVarP(&nmeaVessel, "nmea-vessel", "", "aircraft", "MMSI vessel (aircraft|helicopter)")
 	rootCommand.PersistentFlags().Uint16VarP(&nmeaMid, "nmea-mid", "", 226, "MID (command 'mid' to list)")
+	rootCommand.PersistentFlags().BoolVarP(&loop, "loop", "", false, "With --fixture-file, read the same file in a loop")
 
 	rootCommand.AddCommand(&cobra.Command{
 		Use: "mid",

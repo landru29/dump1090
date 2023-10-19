@@ -50,6 +50,7 @@
             "args": [
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
                 "--tcp", "bind>base-station@0.0.0.0:2000",
+                "--loop",
             ]
         },
         {

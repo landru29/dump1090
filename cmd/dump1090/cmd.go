@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/landru29/dump1090/internal/application"
 	nmeaencoder "github.com/landru29/dump1090/internal/nmea"
@@ -12,6 +13,7 @@ import (
 	"github.com/landru29/dump1090/internal/serialize/none"
 	"github.com/landru29/dump1090/internal/serialize/text"
 	"github.com/landru29/dump1090/internal/transport"
+	"github.com/landru29/dump1090/internal/transport/file"
 	"github.com/landru29/dump1090/internal/transport/http"
 	"github.com/landru29/dump1090/internal/transport/net"
 	"github.com/landru29/dump1090/internal/transport/screen"
@@ -24,6 +26,7 @@ func rootCommand() *cobra.Command {
 		config               application.Config
 		httpConf             httpConfig
 		transportScreen      string
+		transportFile        string
 		nmeaMid              uint16
 		nmeaVessel           string
 		availableSerializers []serialize.Serializer
@@ -101,6 +104,18 @@ func rootCommand() *cobra.Command {
 				transporters = append(transporters, screenTransport)
 			}
 
+			if transportFile != "" {
+				splitter := strings.Split(transportFile, "@")
+				if len(splitter) > 1 {
+					fileTransport, err := file.New(cmd.Context(), strings.Join(splitter[1:], "@"), serializers[splitter[0]])
+					if err != nil {
+						return err
+					}
+
+					transporters = append(transporters, fileTransport)
+				}
+			}
+
 			if len(transporters) == 0 {
 				transporters = append(transporters, screen.Transporter{})
 			}
@@ -132,6 +147,7 @@ func rootCommand() *cobra.Command {
 	rootCommand.PersistentFlags().StringVarP(&nmeaVessel, "nmea-vessel", "", "aircraft", "MMSI vessel (aircraft|helicopter)")
 	rootCommand.PersistentFlags().Uint16VarP(&nmeaMid, "nmea-mid", "", 226, "MID (command 'mid' to list)")
 	rootCommand.PersistentFlags().BoolVarP(&loop, "loop", "", false, "With --fixture-file, read the same file in a loop")
+	rootCommand.PersistentFlags().StringVarP(&transportFile, "out-file", "", "", "format to display output on a file; ie --out-file nmea@/tmp/foo.txt")
 
 	rootCommand.AddCommand(&cobra.Command{
 		Use: "mid",

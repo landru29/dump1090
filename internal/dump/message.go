@@ -90,7 +90,7 @@ func newMessage(message *C.modesMessage) Message {
 		NsDir:            int(message.ns_dir),
 		NsVelocity:       int(message.ns_velocity),
 		VertRateSource:   int(message.vert_rate_source),
-		VertRateNegative: int(message.vert_rate_sign) == 0,
+		VertRateNegative: int(message.vert_rate_sign) != 0,
 		VertRate:         int(message.vert_rate),
 		Velocity:         int(message.velocity),
 		FlightStatus:     int(message.fs),

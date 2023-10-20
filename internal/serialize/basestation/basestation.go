@@ -105,7 +105,7 @@ func message(aircraft dump.Aircraft) string {
 
 		return fmt.Sprintf("MSG,3,,,%s,,,,,,,%d,,,%1.5f,%1.5f,,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Message.Altitude, aircraft.Lat, aircraft.Lon)
 	case aircraft.Message.DownlinkFormat == 17 && aircraft.Message.Type == 19 && aircraft.Message.SubType == 1:
-		verticalRate := aircraft.Message.VertRate * 64 * map[bool]int{true: -1, false: 1}[aircraft.Message.VertRateNegative]
+		verticalRate := int64(aircraft.Message.VertRate-1) * 64 * map[bool]int64{true: -1, false: 1}[aircraft.Message.VertRateNegative]
 
 		return fmt.Sprintf("MSG,4,,,%s,,,,,,,,%d,%d,,,%d,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Speed, aircraft.Track, verticalRate)
 	case aircraft.Message.DownlinkFormat == 21:

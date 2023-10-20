@@ -8,7 +8,6 @@ import "C"
 import (
 	"context"
 	"errors"
-	"unsafe"
 )
 
 const eventSize = 100
@@ -45,7 +44,7 @@ func goSendAircraft(msg *C.modesMessage, ac *C.aircraft) {
 
 	aircraft := newAircraft(ac, msg)
 
-	C.free(unsafe.Pointer(ac))
+	//C.free(unsafe.Pointer(ac))
 
 	eventAircraft <- &aircraft
 }

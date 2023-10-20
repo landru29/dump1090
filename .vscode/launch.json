@@ -62,7 +62,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "--fixture-file", "internal/dump/testdata/modes1.bin",
-                //"--out-file", "base-station@/tmp/bidule.txt",
+                "--out-file", "base-station@/tmp/bidule.txt",
                 "--screen", "base-station",
                 "--loop",
             ]

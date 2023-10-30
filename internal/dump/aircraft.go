@@ -32,6 +32,8 @@ type Aircraft struct {
 	OddCPRtime  time.Time `json:"-"`
 	EvenCPRtime time.Time `json:"-"`
 	CountryCode string    `json:"country_code"`
+
+	Message Message `json:"-"`
 }
 
 func (a Aircraft) String() string {
@@ -39,23 +41,24 @@ func (a Aircraft) String() string {
 		a.HexAddr, a.Flight, a.Altitude, a.Speed, a.Track, a.Lat, a.Lon, a.Seen)
 }
 
-func newAircraft(aircraft *C.aircraft) Aircraft {
+func newAircraft(aircraft *C.aircraft, msg *C.modesMessage) Aircraft {
 	return Aircraft{
-		Addr:       uint32(aircraft.addr),
-		HexAddr:    C.GoString(&aircraft.hexaddr[0]),
-		Flight:     strings.Trim(C.GoString(&aircraft.flight[0]), " "),
-		Altitude:   int(aircraft.altitude),
-		Speed:      int(aircraft.speed),
-		Track:      int(aircraft.track),
-		Seen:       time.Unix(int64(aircraft.seen), 0),
-		Messages:   int64(aircraft.messages),
-		OddCPRlat:  int(aircraft.odd_cprlat),
-		OddCPRlon:  int(aircraft.odd_cprlon),
-		EvenCPRlat: int(aircraft.even_cprlat),
-		EvenCPRlon: int(aircraft.even_cprlon),
-		Lat:        float64(aircraft.lat),
-		Lon:        float64(aircraft.lon),
-		//OddCPRtime:  aircraft.odd_cprtime,
-		//EvenCPRtime: aircraft.even_cprtime,
+		Addr:        uint32(aircraft.addr),
+		HexAddr:     C.GoString(&aircraft.hexaddr[0]),
+		Flight:      strings.Trim(C.GoString(&aircraft.flight[0]), " "),
+		Altitude:    int(aircraft.altitude),
+		Speed:       int(aircraft.speed),
+		Track:       int(aircraft.track),
+		Seen:        time.Unix(int64(aircraft.seen), 0),
+		Messages:    int64(aircraft.messages),
+		OddCPRlat:   int(aircraft.odd_cprlat),
+		OddCPRlon:   int(aircraft.odd_cprlon),
+		EvenCPRlat:  int(aircraft.even_cprlat),
+		EvenCPRlon:  int(aircraft.even_cprlon),
+		Lat:         float64(aircraft.lat),
+		Lon:         float64(aircraft.lon),
+		OddCPRtime:  time.Unix(int64(aircraft.odd_cprtime)/1000, (int64(aircraft.odd_cprtime)%1000)*1000000),
+		EvenCPRtime: time.Unix(int64(aircraft.even_cprtime)/1000, (int64(aircraft.even_cprtime)%1000)*1000000),
+		Message:     newMessage(msg),
 	}
 }

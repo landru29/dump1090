@@ -15,9 +15,15 @@ func main() {
 	var port uint32
 
 	rootCommand := &cobra.Command{
-		Use:   "dump1090",
-		Short: "dump1090",
-		Long:  "dump1090 main command",
+		Use:   "udp",
+		Short: "udp",
+		Long:  "udp main command",
+	}
+
+	rootCommand.AddCommand(&cobra.Command{
+		Use:   "bind",
+		Short: "bind",
+		Long:  "bind port",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			udpServer, err := net.ListenPacket("udp", fmt.Sprintf(":%d", port))
 			if err != nil {
@@ -46,7 +52,7 @@ func main() {
 
 			return nil
 		},
-	}
+	})
 
 	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", 2000, "port to bind")
 
@@ -67,6 +73,7 @@ func main() {
 	}()
 
 	if err := rootCommand.ExecuteContext(ctx); err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

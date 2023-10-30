@@ -28,7 +28,7 @@ func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	}, nil
 }
 
-func (a *App) Start(ctx context.Context) error {
+func (a *App) Start(ctx context.Context, loop bool) error {
 	eventAircraft := make(chan *dump.Aircraft, 10)
 	defer func() {
 		close(eventAircraft)
@@ -55,5 +55,6 @@ func (a *App) Start(ctx context.Context) error {
 		a.cfg.FixturesFilename,
 		nil,
 		eventAircraft,
+		loop,
 	)
 }

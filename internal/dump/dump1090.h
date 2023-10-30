@@ -12,7 +12,7 @@
 
 
 
-int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t enableAGC, char* filename);
+int startProcess(uint32_t deviceIndex, int gain, uint32_t frequency, uint8_t enableAGC, char* filename, int loop);
 
 /* The struct we use to store information about a decoded message. */
 typedef struct {
@@ -81,6 +81,6 @@ typedef struct Aircraft{
 } aircraft;
 
 extern void goSendMessage(modesMessage*);
-extern void goSendAircraft(aircraft*);
+extern void goSendAircraft(modesMessage*, aircraft*);
 
 #endif

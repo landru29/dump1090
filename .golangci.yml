@@ -68,3 +68,7 @@ issues:
     - path: internal/serialize/basestation/basestation.go
       linters:
         - gomnd
+
+    - path: internal/adsb/adsb.go
+      linters:
+        - gomnd

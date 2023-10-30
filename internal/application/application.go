@@ -1,3 +1,4 @@
+// Package application is the main application.
 package application
 
 import (
@@ -8,6 +9,11 @@ import (
 	"github.com/landru29/dump1090/internal/transport"
 )
 
+const (
+	acChannelSize = 10
+)
+
+// Config is the application configuration.
 type Config struct {
 	FixturesFilename string
 	DeviceIndex      uint32
@@ -16,11 +22,13 @@ type Config struct {
 	EnableAGC        bool
 }
 
+// App is the main application.
 type App struct {
 	cfg         *Config
 	tranporters []transport.Transporter
 }
 
+// New creates a new application.
 func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	return &App{
 		cfg:         cfg,
@@ -28,13 +36,14 @@ func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	}, nil
 }
 
+// Start is the application entrypoint.
 func (a *App) Start(ctx context.Context, loop bool) error {
-	eventAircraft := make(chan *dump.Aircraft, 10)
+	eventAircraft := make(chan *dump.Aircraft, acChannelSize)
 	defer func() {
 		close(eventAircraft)
 	}()
 
-	go func(acStream chan *dump.Aircraft, app *App) {
+	go func(acStream chan *dump.Aircraft) {
 		for {
 			ac := <-acStream
 
@@ -44,7 +53,7 @@ func (a *App) Start(ctx context.Context, loop bool) error {
 				}
 			}
 		}
-	}(eventAircraft, a)
+	}(eventAircraft)
 
 	return dump.Start(
 		ctx,

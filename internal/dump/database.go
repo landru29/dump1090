@@ -1,5 +1,6 @@
 package dump
 
+// CountryDesc is a country descriptor.
 type CountryDesc struct {
 	Mask      uint32
 	Country   string
@@ -7,7 +8,7 @@ type CountryDesc struct {
 	ShortCode string
 }
 
-var aircraftDatabase = []CountryDesc{
+var aircraftDatabase = []CountryDesc{ //nolint: gochecknoglobals
 	{Mask: 0x004000, ShortCode: "ZW", Code: "ZWE", Country: "Zimbabwe"},
 	{Mask: 0x006000, ShortCode: "MZ", Code: "MOZ", Country: "Mozambique"},
 	{Mask: 0x008000, ShortCode: "ZA", Code: "ZAF", Country: "South Africa"},
@@ -196,6 +197,7 @@ var aircraftDatabase = []CountryDesc{
 	{Mask: 0xe94000, ShortCode: "BO", Code: "BOL", Country: "Bolivia"},
 }
 
+// SetCountry sets the country on the aircraft.
 func SetCountry(ac *Aircraft) {
 	for _, desc := range aircraftDatabase {
 		if ac.Addr&desc.Mask != 0 {

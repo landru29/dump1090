@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	nativenet "net"
 	"strings"
 	"sync"
 
@@ -23,7 +22,13 @@ type Transporter struct {
 	outWriter io.Writer
 }
 
-func New(ctx context.Context, formater map[string]serialize.Serializer, conf ProtocolConfig, outputLog io.Writer) (*Transporter, error) {
+// New creates a net transporter.
+func New(
+	ctx context.Context,
+	formater map[string]serialize.Serializer,
+	conf ProtocolConfig,
+	outputLog io.Writer,
+) (*Transporter, error) {
 	if formater == nil {
 		return nil, fmt.Errorf("no valid formater")
 	}
@@ -52,6 +57,7 @@ func New(ctx context.Context, formater map[string]serialize.Serializer, conf Pro
 	return nil, fmt.Errorf("unknown %s: specify 'dial' or 'bind'", conf.direction)
 }
 
+// Bind is the net binder.
 func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
 	splitter := strings.Split(addr, ":")
 	port := splitter[len(splitter)-1]
@@ -69,13 +75,14 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 			case <-ctx.Done():
 				t.close()
 				_ = tcpServer.Close()
+
 				return
 			default:
-				var conn nativenet.Conn
+				var conn net.Conn
 				// Wait for a connection.
 				conn, err = tcpServer.Accept()
 				if err != nil {
-					fmt.Printf("ERROR: %s\n", err)
+					fmt.Printf("ERROR: %s\n", err) //nolint: forbidigo
 
 					return
 				}
@@ -92,10 +99,11 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 	return nil
 }
 
+// Dial is the net dialer.
 func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
 	fmt.Fprintf(outputLog, "Dialing %s to %s\n", strings.ToUpper(string(pType)), addr)
 
-	server, err := nativenet.Dial(string(pType), addr)
+	server, err := net.Dial(string(pType), addr)
 	if err != nil {
 		return err
 	}

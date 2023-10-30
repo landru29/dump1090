@@ -3,99 +3,120 @@ package nmea
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"math"
+	"reflect"
+	"strings"
 
-	"github.com/landru29/dump1090/internal/dump"
-
-	nmeaencoder "github.com/landru29/dump1090/internal/nmea"
+	"github.com/landru29/dump1090/internal/errors"
 )
-
-type VesselType int
 
 const (
-	VesselTypeAircraft = iota
-	VesselTypeHelicopter
+	bitSize  = 6 // nmea byte size
+	byteSize = 8 // real byte size
+
+	errDataTooLong     errors.Error = "length is over data capacity"
+	errUnsupportedType errors.Error = "unsupported data type"
 )
 
-// Serializer is the nmea serializer.
-type Serializer struct {
-	mmsiVessel VesselType
-	mid        uint16
-}
+type fields [][]byte
 
-func New(mmsiVessel VesselType, mid uint16) *Serializer {
-	return &Serializer{
-		mmsiVessel: mmsiVessel,
-		mid:        mid,
-	}
-}
+func (f fields) checkSum() string {
+	output := byte(0)
 
-// Serialize implements the Serialize.Serializer interface.
-func (s Serializer) Serialize(ac any) ([]byte, error) {
-	if ac == nil {
-		return nil, nil
-	}
+	data := bytes.Join(f, []byte(","))
+	currentField := 0
 
-	switch aircraft := ac.(type) {
-	case dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{&aircraft})
-	case *dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{aircraft})
-	case []dump.Aircraft:
-		out := make([]*dump.Aircraft, len(aircraft))
-		for idx := range aircraft {
-			out[idx] = &aircraft[idx]
-		}
-		return s.Serialize(out)
-	case []*dump.Aircraft:
-		output := [][]byte{}
-		for _, ac := range aircraft {
-			if ac.Lon != 0 || ac.Lat != 0 {
-				fields, err := nmeaencoder.Payload{
-					MMSI:             s.MMSI(ac.Addr),
-					Longitude:        ac.Lon,
-					Latitude:         ac.Lat,
-					SpeedOverGround:  float64(ac.Speed) / 10,
-					PositionAccuracy: true,
-					CourseOverGround: float64(ac.Track),
-					TrueHeading:      uint16(ac.Track),
-					NavigationStatus: nmeaencoder.NavigationStatusAground,
-				}.Fields()
-				if err != nil {
-					return nil, err
-				}
-				output = append(output, []byte(fields.String()))
-			}
+	for idx, byteElement := range data {
+		if idx == 0 && byteElement == '!' || byteElement == '$' {
+			continue
 		}
 
-		if len(output) == 0 {
-			return nil, nil
+		if byteElement == ',' {
+			currentField++
 		}
 
-		return bytes.Join(output, []byte("\n")), nil
+		if currentField == len(f)-1 && byteElement == '*' {
+			break
+		}
+
+		output ^= byteElement
 	}
 
-	return nil, nil
+	return strings.ToUpper(hex.EncodeToString([]byte{output}))
 }
 
-// Serialize implements the Serialize.Serializer interface.
-func (s Serializer) MimeType() string {
-	return "application/nmea"
+func (f fields) String() string {
+	return string(bytes.Join(f, []byte(",")))
 }
 
-func (s Serializer) MMSI(addr uint32) uint32 {
-	out := uint32(s.mid%1000)*10000 + 10000000
+func payloadAddBytes(dest []uint8, data []uint8, bitPosition uint8, length uint8) {
+	startInputBit := uint8(len(data))*8 - length
+	for idx := uint8(0); idx < length; idx++ {
+		readBit := (data[(startInputBit+idx)/byteSize] << ((startInputBit + idx) % byteSize)) & 0x80
 
-	switch s.mmsiVessel {
-	case VesselTypeAircraft:
-		out += 1000
-	case VesselTypeHelicopter:
-		out += 5000
+		writeBit := readBit >> ((bitPosition+idx)%bitSize + 2)
+		dest[(bitPosition+idx)/bitSize] |= writeBit
+	}
+}
+
+func payloadAddData(dest []uint8, data any, bitPosition uint8, length uint8) (uint8, error) {
+	var encoded []uint8
+
+	switch value := data.(type) {
+	case uint64:
+		encoded = make([]uint8, 8)
+		binary.BigEndian.PutUint64(encoded, value)
+
+	case bool:
+		encoded = []uint8{0}
+		if value {
+			encoded = []uint8{1}
+		}
+
+	case int64:
+		encoded = make([]uint8, 8)
+		binary.BigEndian.PutUint64(encoded, uint64(value))
+
+	case uint8:
+		return payloadAddData(dest, uint64(value), bitPosition, length)
+	case uint16:
+		return payloadAddData(dest, uint64(value), bitPosition, length)
+	case uint32:
+		return payloadAddData(dest, uint64(value), bitPosition, length)
+
+	case int8:
+		return payloadAddData(dest, int64(value), bitPosition, length)
+	case int16:
+		return payloadAddData(dest, int64(value), bitPosition, length)
+	case int32:
+		return payloadAddData(dest, int64(value), bitPosition, length)
+
+	case float64:
+		return payloadAddData(dest, math.Float64bits(value), bitPosition, length)
+	case float32:
+		return payloadAddData(dest, math.Float64bits(float64(value)), bitPosition, length)
+
+	default:
+		return 0, fmt.Errorf("%w: %s", errUnsupportedType, reflect.TypeOf(data).Kind().String())
 	}
 
-	return out + addr%1000
+	payloadAddBytes(dest, encoded, bitPosition, length)
+
+	return length, nil
 }
 
-// Serialize implements the Serialize.Serializer interface.
-func (s Serializer) String() string {
-	return "nmea"
+func encodeBinaryPayload(input []uint8) string {
+	str := ""
+	for idx, elt := range input {
+		if (elt & 0x3f) > 0x27 {
+			str = str[:idx] + string(elt+56)
+		} else {
+			str = str[:idx] + string(elt+48)
+		}
+	}
+
+	return str
 }

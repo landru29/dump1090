@@ -1,3 +1,4 @@
+// Package dump is the embed c-code.
 package dump
 
 /*
@@ -5,6 +6,7 @@ package dump
   #include "dump1090.h"
 */
 import "C"
+
 import (
 	"context"
 	"errors"
@@ -13,14 +15,16 @@ import (
 const eventSize = 100
 
 var (
-	eventMessage  chan *Message
-	eventAircraft chan *Aircraft
+	eventMessage  chan *Message  //nolint: gochecknoglobals
+	eventAircraft chan *Aircraft //nolint: gochecknoglobals
 )
 
+// EventMessage is the readonly variable.
 func EventMessage() chan *Message {
 	return eventMessage
 }
 
+// EventAircraft is the readonly variable.
 func EventAircraft() chan *Aircraft {
 	return eventAircraft
 }
@@ -44,11 +48,10 @@ func goSendAircraft(msg *C.modesMessage, ac *C.aircraft) {
 
 	aircraft := newAircraft(ac, msg)
 
-	//C.free(unsafe.Pointer(ac))
-
 	eventAircraft <- &aircraft
 }
 
+// Start starts listening to the device stream.
 func Start(
 	ctx context.Context,
 	deviceIndex uint32,
@@ -79,8 +82,6 @@ func Start(
 		for {
 			ac := <-eventAircraft
 
-			//SetCountry(ac)
-
 			if evtAircraft != nil {
 				evtAircraft <- ac
 			}
@@ -101,10 +102,10 @@ func Start(
 		C.uint32_t(deviceIndex),
 		C.int(gain),
 		C.uint32_t(frequency),
-		C.uint8_t(map[bool]C.uint8_t{
+		map[bool]C.uint8_t{
 			true:  1,
 			false: 0,
-		}[enableAGC]),
+		}[enableAGC],
 		filenameCString,
 		loopInt,
 	); ret != 0 {

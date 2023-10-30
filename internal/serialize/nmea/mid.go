@@ -1,15 +1,16 @@
 package nmea
 
-type MidAllocation struct {
+type midAllocation struct {
 	MID  uint16
 	Loc  string
 	Code []string
 }
 
-var MidList []MidAllocation
+// MidList is the list of identifiers.
+var MidList []midAllocation //nolint: gochecknoglobals
 
-func init() {
-	MidList = []MidAllocation{
+func init() { //nolint: funlen,gochecknoinits
+	MidList = []midAllocation{
 		{MID: 201, Loc: "Albania", Code: []string{"AL"}},
 		{MID: 202, Loc: "Andorra", Code: []string{"AD"}},
 		{MID: 203, Loc: "Austria", Code: []string{"AT"}},

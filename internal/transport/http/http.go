@@ -22,6 +22,8 @@ const (
 	cleanDelay time.Duration = time.Second * 10
 
 	outOfDateAC time.Duration = time.Minute
+
+	readHeaderTimeout time.Duration = time.Second * 10
 )
 
 // Transporter is the http transporter.
@@ -31,6 +33,7 @@ type Transporter struct {
 	formaters    map[string]serialize.Serializer
 }
 
+// New creates an http transporter.
 func New(ctx context.Context, addr string, apiPath string, formaters []serialize.Serializer) (*Transporter, error) {
 	subFS, _ := fs.Sub(staticFiles, "public")
 
@@ -46,27 +49,28 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 	router := mux.NewRouter()
 	router.HandleFunc(apiPath, output.serveData)
 	router.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("window.apiPath='%s'", apiPath)))
+		_, _ = w.Write([]byte(fmt.Sprintf("window.apiPath='%s'", apiPath)))
 	})
 	if apiPath != "/" {
 		router.PathPrefix("/").Handler(http.FileServer(http.FS(subFS)))
 	}
 
 	srv := &http.Server{
-		Handler: router,
-		Addr:    addr,
+		Handler:           router,
+		Addr:              addr,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
 	go func() {
-		fmt.Printf("Serving on %s\n", addr)
+		fmt.Printf("Serving on %s\n", addr) //nolint: forbidigo
 		if err := srv.ListenAndServe(); err != nil {
-			fmt.Printf("ERR: %s", err)
+			fmt.Printf("ERR: %s", err) //nolint: forbidigo
 		}
 	}()
 
 	go func() {
 		<-ctx.Done()
-		srv.Shutdown(ctx)
+		_ = srv.Shutdown(ctx)
 	}()
 
 	go func(app *Transporter) {
@@ -107,7 +111,7 @@ func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writer.Header().Set("content-type", requestedMimeType)
-	writer.Write([]byte(output))
+	_, _ = writer.Write(output)
 }
 
 func (t *Transporter) acCleaner(ctx context.Context) {

@@ -1,3 +1,4 @@
+// Package main is the TCP application test.
 package main
 
 import (
@@ -13,7 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func main() {
+const (
+	defaultTCPport = 2000
+	bufferSize     = 2048
+	maxRetries     = 300
+)
+
+func main() { //nolint: funlen,gocognit
 	var (
 		port    uint32
 		address string
@@ -56,7 +63,7 @@ func main() {
 
 					go func(c net.Conn) {
 						for {
-							c.Write([]byte("foo"))
+							_, _ = c.Write([]byte("foo"))
 							time.Sleep(time.Second)
 						}
 					}(conn)
@@ -82,7 +89,7 @@ func main() {
 
 			cmd.Printf("trying to connect to %s ...\n", address)
 
-			bckoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(1*time.Second), 300)
+			bckoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(1*time.Second), maxRetries)
 			err := backoff.Retry(func() error {
 				var err error
 				conn, err = d.DialContext(cmd.Context(), "tcp", address)
@@ -96,7 +103,9 @@ func main() {
 				return err
 			}
 
-			defer conn.Close()
+			defer func() {
+				_ = conn.Close()
+			}()
 
 			cmd.Printf("connected to %s\n", address)
 
@@ -104,7 +113,7 @@ func main() {
 
 			go func() {
 				var cnt int
-				packet := make([]byte, 2048)
+				packet := make([]byte, bufferSize)
 				for {
 					cnt, err = conn.Read(packet)
 					if err != nil {
@@ -116,7 +125,6 @@ func main() {
 					}
 
 					cmd.Printf("%d =>%s\n", cnt, string(packet[:cnt]))
-
 				}
 			}()
 
@@ -124,18 +132,18 @@ func main() {
 				select {
 				case <-cmd.Context().Done():
 					cmd.Println("Quitting")
+
 					return nil
 				case err := <-errChan:
-					cmd.Println("error occured")
+					cmd.Println("error occurred")
+
 					return err
 				}
 			}
-
-			return nil
 		},
 	})
 
-	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", 2000, "port to bind")
+	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", defaultTCPport, "port to bind")
 	rootCommand.PersistentFlags().StringVarP(&address, "addr", "a", "127.0.0.1:3000", "address to dial")
 
 	s := make(chan os.Signal, 1)
@@ -155,7 +163,8 @@ func main() {
 	}()
 
 	if err := rootCommand.ExecuteContext(ctx); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		fmt.Println(err) //nolint: forbidigo
+
+		os.Exit(1) //nolint: gocritic
 	}
 }

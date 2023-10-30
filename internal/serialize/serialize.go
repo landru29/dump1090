@@ -1,4 +1,4 @@
-// Package serialize describes how to serialize aircrafts.
+// Package serialize describes how to serialize aircraft.
 package serialize
 
 // Serializer is the aircraft serializer.

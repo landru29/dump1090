@@ -1,3 +1,4 @@
+// Package main is the UDP application test.
 package main
 
 import (
@@ -9,6 +10,11 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	defaultUDPport    = 2000
+	defaultBufferSize = 1024
 )
 
 func main() {
@@ -37,7 +43,7 @@ func main() {
 
 			go func() {
 				for {
-					buf := make([]byte, 1024)
+					buf := make([]byte, defaultBufferSize)
 					length, _, err := udpServer.ReadFrom(buf)
 					if err != nil {
 						continue
@@ -54,7 +60,7 @@ func main() {
 		},
 	})
 
-	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", 2000, "port to bind")
+	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", defaultUDPport, "port to bind")
 
 	s := make(chan os.Signal, 1)
 
@@ -73,7 +79,10 @@ func main() {
 	}()
 
 	if err := rootCommand.ExecuteContext(ctx); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		fmt.Println(err) //nolint: forbidigo
+
+		cancel()
+
+		os.Exit(1) //nolint: gocritic
 	}
 }

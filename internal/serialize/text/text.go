@@ -8,8 +8,7 @@ import (
 )
 
 // Serializer is the text serializer.
-type Serializer struct {
-}
+type Serializer struct{}
 
 // Serialize implements the Serialize.Serializer interface.
 func (s Serializer) Serialize(ac any) ([]byte, error) {
@@ -27,6 +26,7 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 		for idx := range aircraft {
 			out[idx] = &aircraft[idx]
 		}
+
 		return s.Serialize(out)
 	case []*dump.Aircraft:
 		out := make([]string, len(aircraft))
@@ -40,12 +40,12 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 	return nil, nil
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// MimeType implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
 	return "text/plain"
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// String implements the Serialize.Serializer interface.
 func (s Serializer) String() string {
 	return "text"
 }

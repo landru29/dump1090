@@ -1,4 +1,4 @@
-package adsb
+package modes
 
 import (
 	"fmt"
@@ -23,19 +23,19 @@ var checksumTable = [112]uint32{
 	0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
 }
 
-func (m Message) checksum() error {
-	data := append(m.Raw, []byte{0, 0, 0}...)
+func (m Message) checksumSquitter() error {
+	data := append(m.ModeS.Raw[:len(m.ModeS.Raw)-3], []byte{0, 0, 0}...)
 
-	crc := checksum(data, uint16(8*len(data)))
+	crc := checksumSquitter(data, uint16(8*len(data)))
 
-	if crc != m.ParityInterrogator {
-		return errors.Wrap(ErrWrongCRC, fmt.Sprintf("expecting %08X, got %08X", m.ParityInterrogator, crc))
+	if crc != m.ModeS.ParityInterrogator {
+		return errors.Wrap(ErrWrongCRC, fmt.Sprintf("expecting %08X, got %08X", m.ModeS.ParityInterrogator, crc))
 	}
 
 	return nil
 }
 
-func checksum(data []byte, bits uint16) uint32 {
+func checksumSquitter(data []byte, bits uint16) uint32 {
 	crc := uint32(0)
 	offset := uint16(0)
 	if len(data)*8 != 112 {

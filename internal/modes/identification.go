@@ -1,4 +1,4 @@
-package adsb
+package modes
 
 const asciiTable = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ##### ###############0123456789######"
 

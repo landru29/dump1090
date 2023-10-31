@@ -1,5 +1,5 @@
-// Package adsb is the Automatic Dependent Surveillance-Broadcast.
-package adsb
+// Package modes is the Mode S.
+package modes
 
 import (
 	"github.com/landru29/dump1090/internal/errors"
@@ -15,45 +15,15 @@ const (
 	ErrUnsupportedDownlinkFormat errors.Error = "unsupported downlink format"
 )
 
-// DownlinkFormat is the 5 first bits of an ADSB message.
-type DownlinkFormat byte
-
-const (
-	// DownlinkFormatShortAirAirSurveillance is Short air-air surveillance (ACAS) => message size: 56 bits.
-	DownlinkFormatShortAirAirSurveillance DownlinkFormat = 0
-	// DownlinkFormatAltitudeReply is Altitude reply => message size: 56 bits.
-	DownlinkFormatAltitudeReply DownlinkFormat = 4
-	// DownlinkFormatIdentityReply is Identity reply => message size: 56 bits.
-	DownlinkFormatIdentityReply DownlinkFormat = 5
-	// DownlinkFormatAllCallReply is All-call reply => message size: 56 bits.
-	DownlinkFormatAllCallReply DownlinkFormat = 11
-	// DownlinkFormatLongAirAirSurveillance is Long air-air surveillance (ACAS) => message size: 112 bits.
-	DownlinkFormatLongAirAirSurveillance DownlinkFormat = 16
-	// DownlinkFormatExtendedSquitter is Extended squitter => message size: 112 bits.
-	DownlinkFormatExtendedSquitter DownlinkFormat = 17
-	// DownlinkFormatExtendedSquitterNonTransponder is Extended squitter, non transponder => message size: 112 bits.
-	DownlinkFormatExtendedSquitterNonTransponder DownlinkFormat = 18
-	// DownlinkFormatMilitaryExtendedSquitter is Military extended squitter => message size: 112 bits.
-	DownlinkFormatMilitaryExtendedSquitter DownlinkFormat = 19
-	// DownlinkFormatCommBWithAltitudeReply is Comm-B, with altitude reply => message size: 112 bits.
-	DownlinkFormatCommBWithAltitudeReply DownlinkFormat = 20
-	// DownlinkFormatCommBWithIdentityReply is Comm-B, with identity reply => message size: 112 bits.
-	DownlinkFormatCommBWithIdentityReply DownlinkFormat = 21
-	// DownlinkFormatCommDExtendedLengthMessage is Comm-D, extended length message => message size: 112 bits.
-	DownlinkFormatCommDExtendedLengthMessage DownlinkFormat = 24
-)
-
 type TypeCode byte
 
 // Message is an ADSB message.
 type Message struct {
-	DownlinkFormat        DownlinkFormat
 	TransponderCapability byte
 	AircraftAddress       uint32
 	TypeCode              TypeCode
 	Message               []byte
-	ParityInterrogator    uint32
-	Raw                   []byte
+	ModeS                 Frame
 }
 
 type MessageType int
@@ -80,31 +50,27 @@ const (
 )
 
 // Unmarshal parses the message.
-func (m *Message) Unmarshal(data []byte) error {
-	length := len(data)
-	if length < 7 {
+func (m *Message) Unmarshal(data Frame) error {
+	m.ModeS = data
+
+	length := len(data.Data)
+	if length < 10 {
 		return ErrWrongMessageSize
 	}
 
-	m.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3)
-
-	if m.DownlinkFormat != 17 && m.DownlinkFormat != 18 {
+	if m.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitter && m.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitterNonTransponder {
 		return ErrUnsupportedDownlinkFormat
 	}
 
-	m.TransponderCapability = data[0] & 0x07
+	m.TransponderCapability = data.Raw[0] & 0x07
 
-	m.AircraftAddress = (uint32(data[1]) << 16) + (uint32(data[2]) << 8) + uint32(data[3])
+	m.AircraftAddress = (uint32(data.Data[0]) << 16) + (uint32(data.Data[1]) << 8) + uint32(data.Data[2])
 
-	m.TypeCode = TypeCode((data[4] & 0xf8) >> 3)
+	m.TypeCode = TypeCode((data.Data[3] & 0xf8) >> 3)
 
-	m.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + uint32(data[length-1])
+	m.Message = data.Data[3:]
 
-	m.Message = data[4 : length-3]
-
-	m.Raw = data[:length-3]
-
-	return m.checksum()
+	return m.checksumSquitter()
 }
 
 // Type is the type of message.

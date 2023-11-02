@@ -1,3 +1,4 @@
+// Package basestation is the BaseStation serializer.
 package basestation
 
 import (
@@ -43,30 +44,30 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 		return bytes.Join(output, []byte("\n")), nil
 
 	case []*dump.Aircraft:
-		aircrafts := []dump.Aircraft{}
+		acs := []dump.Aircraft{}
 		for _, ac := range aircraft {
 			if ac != nil {
-				aircrafts = append(aircrafts, *ac)
+				acs = append(acs, *ac)
 			}
 		}
 
-		return s.Serialize(aircrafts)
+		return s.Serialize(acs)
 	}
 
 	return nil, nil
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// MimeType implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
 	return "application/basestation"
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// String implements the Serialize.Serializer interface.
 func (s Serializer) String() string {
 	return "base-station"
 }
 
-func message(aircraft dump.Aircraft) string {
+func message(aircraft dump.Aircraft) string { //nolint: cyclop
 	alert := map[bool]int{
 		false: 0,
 		true:  -1,
@@ -91,9 +92,9 @@ func message(aircraft dump.Aircraft) string {
 	case aircraft.Message.DownlinkFormat == 0:
 		return fmt.Sprintf("MSG,5,,,%s,,,,,,,%d,,,,,,,,,,", aircraft.Message.HexIdent(), aircraft.Message.Altitude)
 	case aircraft.Message.DownlinkFormat == 4:
-		return fmt.Sprintf("MSG,5,,,%s,,,,,,,%d,,,,,,,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Altitude, alert, emergency, spi, ground)
+		return fmt.Sprintf("MSG,5,,,%s,,,,,,,%d,,,,,,,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Altitude, alert, emergency, spi, ground) //nolint: lll
 	case aircraft.Message.DownlinkFormat == 5:
-		return fmt.Sprintf("MSG,6,,,%s,,,,,,,,,,,,,%d,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Identity, alert, emergency, spi, ground)
+		return fmt.Sprintf("MSG,6,,,%s,,,,,,,,,,,,,%d,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Identity, alert, emergency, spi, ground) //nolint: lll
 	case aircraft.Message.DownlinkFormat == 11:
 		return fmt.Sprintf("MSG,8,,,%s,,,,,,,,,,,,,,,,,", aircraft.Message.HexIdent())
 	case aircraft.Message.DownlinkFormat == 17 && aircraft.Message.Type == 4:
@@ -103,13 +104,13 @@ func message(aircraft dump.Aircraft) string {
 			return fmt.Sprintf("MSG,3,,,%s,,,,,,,%d,,,,,,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Message.Altitude)
 		}
 
-		return fmt.Sprintf("MSG,3,,,%s,,,,,,,%d,,,%1.5f,%1.5f,,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Message.Altitude, aircraft.Lat, aircraft.Lon)
+		return fmt.Sprintf("MSG,3,,,%s,,,,,,,%d,,,%1.5f,%1.5f,,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Message.Altitude, aircraft.Lat, aircraft.Lon) //nolint: lll
 	case aircraft.Message.DownlinkFormat == 17 && aircraft.Message.Type == 19 && aircraft.Message.SubType == 1:
-		verticalRate := int64(aircraft.Message.VertRate-1) * 64 * map[bool]int64{true: -1, false: 1}[aircraft.Message.VertRateNegative]
+		verticalRate := int64(aircraft.Message.VertRate-1) * 64 * map[bool]int64{true: -1, false: 1}[aircraft.Message.VertRateNegative] //nolint: lll
 
-		return fmt.Sprintf("MSG,4,,,%s,,,,,,,,%d,%d,,,%d,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Speed, aircraft.Track, verticalRate)
+		return fmt.Sprintf("MSG,4,,,%s,,,,,,,,%d,%d,,,%d,,0,0,0,0", aircraft.Message.HexIdent(), aircraft.Speed, aircraft.Track, verticalRate) //nolint: lll
 	case aircraft.Message.DownlinkFormat == 21:
-		return fmt.Sprintf("MSG,6,,,%s,,,,,,,,,,,,,%d,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Identity, alert, emergency, spi, ground)
+		return fmt.Sprintf("MSG,6,,,%s,,,,,,,,,,,,,%d,%d,%d,%d,%d", aircraft.Message.HexIdent(), aircraft.Message.Identity, alert, emergency, spi, ground) //nolint: lll
 	}
 
 	return ""

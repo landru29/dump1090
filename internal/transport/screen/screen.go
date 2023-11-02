@@ -24,11 +24,12 @@ func (t Transporter) Transport(ac *dump.Aircraft) error {
 		return nil
 	}
 
-	fmt.Printf("%s\n", string(data))
+	fmt.Printf("%s\n", string(data)) //nolint: forbidigo
 
 	return nil
 }
 
+// New creates  a screen serializer.
 func New(serializer serialize.Serializer) (*Transporter, error) {
 	if serializer == nil {
 		return nil, fmt.Errorf("no valid formater")

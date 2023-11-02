@@ -5,16 +5,16 @@ package none
 type Serializer struct{}
 
 // Serialize implements the Serialize.Serializer interface.
-func (s Serializer) Serialize(ac any) ([]byte, error) {
+func (s Serializer) Serialize(_ any) ([]byte, error) {
 	return nil, nil
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// MimeType implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
 	return ""
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// String implements the Serialize.Serializer interface.
 func (s Serializer) String() string {
 	return "none"
 }

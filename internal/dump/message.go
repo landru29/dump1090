@@ -14,6 +14,7 @@ import "fmt"
 // 	a->hexaddr, a->flight, a->lat, a->lon, a->altitude, a->track,
 // 	a->speed);
 
+// Message is a raw message.
 type Message struct {
 	/* Generic fields */
 	MsgBits        int    /* Number of bits in message */
@@ -102,22 +103,27 @@ func newMessage(message *C.modesMessage) Message {
 	}
 }
 
+// Emergency ...
 func (m Message) Emergency() bool {
-	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.Identity == 7500 || m.Identity == 7600)
+	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.Identity == 7500 || m.Identity == 7600) //nolint: lll
 }
 
+// Alert ...
 func (m Message) Alert() bool {
-	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 2 || m.FlightStatus == 3 || m.FlightStatus == 4)
+	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 2 || m.FlightStatus == 3 || m.FlightStatus == 4) //nolint: lll
 }
 
+// Ground ...
 func (m Message) Ground() bool {
-	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 1 || m.FlightStatus == 3)
+	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 1 || m.FlightStatus == 3) //nolint: lll
 }
 
+// Indent ...
 func (m Message) Indent() bool {
-	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 4 || m.FlightStatus == 5)
+	return (m.DownlinkFormat == 4 || m.DownlinkFormat == 5 || m.DownlinkFormat == 21) && (m.FlightStatus == 4 || m.FlightStatus == 5) //nolint: lll
 }
 
+// HexIdent ...
 func (m Message) HexIdent() string {
 	return fmt.Sprintf("%02X%02X%02X", m.IcaoAddress[0], m.IcaoAddress[1], m.IcaoAddress[2])
 }

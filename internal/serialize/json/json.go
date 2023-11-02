@@ -13,12 +13,12 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 	return json.Marshal(ac)
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// MimeType implements the Serialize.Serializer interface.
 func (s Serializer) MimeType() string {
 	return "application/json"
 }
 
-// Serialize implements the Serialize.Serializer interface.
+// String implements the Serialize.Serializer interface.
 func (s Serializer) String() string {
 	return "json"
 }

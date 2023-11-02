@@ -1,0 +1,74 @@
+run:
+  timeout: 2m
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+  funlen:
+    lines: 100
+    statements: 40
+
+linters:
+  enable-all: true
+  disable:
+    - wrapcheck
+    - noctx
+    - paralleltest
+    - exhaustivestruct
+    - goerr113
+    - scopelint
+    - interfacer
+    - maligned
+    - godox
+    - exhaustruct
+    - interfacebloat
+    - depguard
+    - godot
+    - maintidx
+    - tagliatelle
+# Deprecated
+    - structcheck
+    - nosnakecase
+    - golint
+    - deadcode
+    - ifshort
+    - varcheck
+    # - testpackage
+    - tparallel
+    - varnamelen
+    - wsl
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: .*_test\.go
+      linters:
+        - funlen
+        - lll
+        - dupl
+        - goconst
+        - forcetypeassert
+
+    - path: internal/dump/database.go
+      linters:
+        - gomnd
+    
+    - path: internal/serialize/nmea/mid.go
+      linters:
+        - gomnd
+
+    - path: internal/serialize/nmea/aivdm.go
+      linters:
+        - gomnd
+
+    - path: internal/serialize/nmea/nmea.go
+      linters:
+        - gomnd
+
+    - path: internal/serialize/basestation/basestation.go
+      linters:
+        - gomnd
+
+    - path: internal/adsb/adsb.go
+      linters:
+        - gomnd

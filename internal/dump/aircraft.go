@@ -5,12 +5,14 @@ package dump
 #include "dump1090.h"
 */
 import "C"
+
 import (
 	"fmt"
 	"strings"
 	"time"
 )
 
+// Aircraft is an aircraft.
 type Aircraft struct {
 	Addr     uint32    `json:"icao"`     /* ICAO address */
 	HexAddr  string    `json:"icao_hex"` /* Printable ICAO address */
@@ -37,7 +39,7 @@ type Aircraft struct {
 }
 
 func (a Aircraft) String() string {
-	return fmt.Sprintf("hex:      %s\nflight:   %s\naltitude: %d\nspeed:    %d\ntrack:    %d\nlat:      %f\nlon:      %f\nseen:     %s\n",
+	return fmt.Sprintf("hex:      %s\nflight:   %s\naltitude: %d\nspeed:    %d\ntrack:    %d\nlat:      %f\nlon:      %f\nseen:     %s\n", //nolint: lll
 		a.HexAddr, a.Flight, a.Altitude, a.Speed, a.Track, a.Lat, a.Lon, a.Seen)
 }
 
@@ -57,8 +59,8 @@ func newAircraft(aircraft *C.aircraft, msg *C.modesMessage) Aircraft {
 		EvenCPRlon:  int(aircraft.even_cprlon),
 		Lat:         float64(aircraft.lat),
 		Lon:         float64(aircraft.lon),
-		OddCPRtime:  time.Unix(int64(aircraft.odd_cprtime)/1000, (int64(aircraft.odd_cprtime)%1000)*1000000),
-		EvenCPRtime: time.Unix(int64(aircraft.even_cprtime)/1000, (int64(aircraft.even_cprtime)%1000)*1000000),
+		OddCPRtime:  time.Unix(int64(aircraft.odd_cprtime)/1000, (int64(aircraft.odd_cprtime)%1000)*1000000),   //nolint: gomnd,lll
+		EvenCPRtime: time.Unix(int64(aircraft.even_cprtime)/1000, (int64(aircraft.even_cprtime)%1000)*1000000), //nolint: gomnd,lll
 		Message:     newMessage(msg),
 	}
 }

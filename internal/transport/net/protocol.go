@@ -13,12 +13,10 @@ const (
 	protocolDial protocolDirection = "dial"
 	protocolBind protocolDirection = "bind"
 
-	protocolTypeTCP protocolType = "tcp"
-	protocolTypeUDP protocolType = "udp"
-
 	defaultProtocolFormat = "nmea"
 )
 
+// ProtocolConfig is the net protocol parameter.
 type ProtocolConfig struct {
 	addr         string
 	format       string
@@ -26,12 +24,14 @@ type ProtocolConfig struct {
 	protocolType protocolType
 }
 
+// NewProtocol creates a new ProtocolConfig.
 func NewProtocol(pType string) ProtocolConfig {
 	return ProtocolConfig{
 		protocolType: protocolType(pType),
 	}
 }
 
+// String implements the pflag.Value interface.
 func (p *ProtocolConfig) String() string {
 	return fmt.Sprintf(
 		"%s/%s:%s@%s",
@@ -42,6 +42,7 @@ func (p *ProtocolConfig) String() string {
 	)
 }
 
+// Set implements the pflag.Value interface.
 func (p *ProtocolConfig) Set(str string) error {
 	actionSplitter := strings.Split(str, ">")
 	switch len(actionSplitter) {
@@ -53,7 +54,7 @@ func (p *ProtocolConfig) Set(str string) error {
 		p.addr = addr
 
 		return nil
-	case 2:
+	case 2: //nolint: gomnd
 		format, addr := parseData(actionSplitter[1])
 
 		p.format = format
@@ -66,10 +67,12 @@ func (p *ProtocolConfig) Set(str string) error {
 	return fmt.Errorf("wrong format %s (should be like dial>text@0.0.0.0:30003)", str)
 }
 
+// Type implements the pflag.Value interface.
 func (p *ProtocolConfig) Type() string {
 	return "protocol configuration"
 }
 
+// IsValid checks if the protocol configuration is valid.
 func (p ProtocolConfig) IsValid() bool {
 	return p.addr != ""
 }
@@ -89,5 +92,4 @@ func parseData(str string) (string, string) {
 	}
 
 	return format, addr
-
 }

@@ -1,11 +1,10 @@
-package nmea_test
+package nmea //nolint: testpackage
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
-	"github.com/landru29/dump1090/internal/nmea"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,10 +12,10 @@ func displayBytes(t *testing.T, data []uint8) {
 	t.Helper()
 
 	for _, elt := range data {
-		fmt.Printf("%06b ", elt)
+		fmt.Printf("%06b ", elt) //nolint: forbidigo
 	}
 
-	fmt.Println()
+	fmt.Println() //nolint: forbidigo
 }
 
 func TestCheckSum(t *testing.T) {
@@ -30,12 +29,11 @@ func TestCheckSum(t *testing.T) {
 		value := sentence
 
 		t.Run(value, func(t *testing.T) {
-			fields := nmea.Fields(bytes.Split([]byte(value), []byte{','}))
+			fields := fields(bytes.Split([]byte(value), []byte{','}))
 
-			assert.Equal(t, value[len(value)-2:], fields.CheckSum())
+			assert.Equal(t, value[len(value)-2:], fields.checkSum())
 		})
 	}
-
 }
 
 func TestAddData(t *testing.T) {
@@ -57,7 +55,7 @@ func TestAddData(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			encoded := make([]uint8, 10)
 
-			nmea.PayloadAddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
+			_, _ = payloadAddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
 
 			assert.Equal(t, fixture.expected, encoded)
 
@@ -69,6 +67,6 @@ func TestAddData(t *testing.T) {
 func TestEncode(t *testing.T) {
 	assert.Equal(t,
 		"123456789:;<=>?@ABCDEFGHIJKL",
-		nmea.EncodeBinaryPayload([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),
+		encodeBinaryPayload([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),
 	)
 }

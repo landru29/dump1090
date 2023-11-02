@@ -83,4 +83,28 @@ func TestWriteBits(t *testing.T) {
 
 		assert.Equal(t, []byte{0xff, 0xfb, 0x9d, 0xb7, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
 	})
+
+	t.Run("zero in one", func(t *testing.T) {
+		// 11111111 11000000 00000000 00000111 11111111 11111111 11111111 11111111 11111111 11111111
+		//            000000 00000000 00000
+		data := make([]byte, 10)
+
+		for idx := range data {
+			data[idx] = 0xff
+		}
+
+		modes.WriteBits(&data, uint64(0), 10, 19)
+
+		assert.Equal(t, []byte{0xff, 0xc0, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
+	})
+
+	t.Run("one in zero", func(t *testing.T) {
+		// 00000000 00111111 11111111 11111000 00000000 00000000 00000000 00000000 00000000 00000000
+		//            111111 11111111 11111
+		data := make([]byte, 10)
+
+		modes.WriteBits(&data, uint64(0x7ffff), 10, 19)
+
+		assert.Equal(t, []byte{0x00, 0x3f, 0xff, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
+	})
 }

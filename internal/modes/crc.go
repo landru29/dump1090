@@ -1,8 +1,6 @@
 package modes
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -37,32 +35,47 @@ func (e ExtendedSquitter) checksum() error {
 	return nil
 }
 
-func (e ExtendedSquitter) checksumv2() error {
-	data := append(e.ModeS.Raw[:len(e.ModeS.Raw)-3], []byte{0, 0, 0, 0, 0, 0, 0, 0, 0}...)
+func (e ExtendedSquitter) Checksumv2() error {
+	remainder := Checksumv2(e.ModeS.Raw[:len(e.ModeS.Raw)-3])
+
+	if remainder != e.ParityInterrogator {
+		return ErrWrongCRC
+	}
+
+	return nil
+}
+
+func writeBits(data []byte) {
+	for _, elt := range data {
+		fmt.Printf("%08b ", elt)
+	}
+	fmt.Println()
+}
+
+func Checksumv2(input []byte) uint32 {
+	data := append(input, []byte{0, 0, 0}...)
 
 	// x^24 + x^23 +x^22 +x^21 +x^20 +x^19 +x^18 +x^17 +x^16 +x^15 +x^14 +x^13 +x^12 +x^10 +x^3 + 1
 	generator := uint64(0x01fff409)
 
-	for idx := 0; idx < len(e.ModeS.Raw)-24; idx++ {
+	writeBits(data)
+
+	for idx := 0; idx < len(input)*8; idx++ {
 		bitIdx := byte(idx % 8)
 		byteIdx := idx / 8
-		mask := byte(80) >> bitIdx
+		mask := byte(0x80) >> bitIdx
 
 		if data[byteIdx]&mask != 0 {
-			var localdata uint64
-			generatorMask := generator << (32 - bitIdx)
-			_ = binary.Read(bytes.NewReader(data[byteIdx:]), binary.LittleEndian, localdata)
-			localdata = localdata ^ generatorMask
-			buf := bytes.NewBuffer(nil)
-			binary.Write(buf, binary.BigEndian, localdata^generatorMask)
-
-			for idx, b := range buf.Bytes() {
-				data[idx+byteIdx] = b
-			}
+			val := ReadBits(data, uint64(idx), 24)
+			WriteBits(&data, val^generator, uint64(idx), 24)
 		}
+
+		writeBits(data)
 	}
 
-	return nil
+	remainder := ReadBits(data, uint64(len(input)*8-24), 24)
+
+	return uint32(remainder)
 }
 
 func checksumSquitter(data []byte, bits uint16) uint32 {

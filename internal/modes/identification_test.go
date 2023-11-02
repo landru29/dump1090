@@ -14,13 +14,9 @@ func TestIdentification(t *testing.T) {
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		modeS := &modes.Frame{}
+		msg := modes.ExtendedSquitter{}
 
-		assert.NoError(t, modeS.Unmarshal(dataByte))
-
-		msg := modes.Message{}
-
-		assert.NoError(t, msg.Unmarshal(*modeS))
+		assert.NoError(t, msg.Unmarshal(dataByte))
 
 		ident, err := msg.Identification()
 		require.NoError(t, err)

@@ -17,13 +17,13 @@ const (
 
 type TypeCode byte
 
-// Message is an ADSB message.
-type Message struct {
+// ExtendedSquitter is an extended squitter message.
+type ExtendedSquitter struct {
+	ModeS
 	TransponderCapability byte
 	AircraftAddress       uint32
 	TypeCode              TypeCode
 	Message               []byte
-	ModeS                 Frame
 }
 
 type MessageType int
@@ -50,61 +50,65 @@ const (
 )
 
 // Unmarshal parses the message.
-func (m *Message) Unmarshal(data Frame) error {
-	m.ModeS = data
+func (e *ExtendedSquitter) Unmarshal(data []byte) error {
+	if err := (&e.ModeS).Unmarshal(data); err != nil {
+		return err
+	}
 
-	length := len(data.Data)
+	messageData := data[1 : len(data)-3]
+
+	length := len(messageData)
 	if length < 10 {
 		return ErrWrongMessageSize
 	}
 
-	if m.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitter && m.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitterNonTransponder {
+	if e.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitter && e.ModeS.DownlinkFormat != DownlinkFormatExtendedSquitterNonTransponder {
 		return ErrUnsupportedDownlinkFormat
 	}
 
-	m.TransponderCapability = data.Raw[0] & 0x07
+	e.TransponderCapability = data[0] & 0x07
 
-	m.AircraftAddress = (uint32(data.Data[0]) << 16) + (uint32(data.Data[1]) << 8) + uint32(data.Data[2])
+	e.AircraftAddress = (uint32(messageData[0]) << 16) + (uint32(messageData[1]) << 8) + uint32(messageData[2])
 
-	m.TypeCode = TypeCode((data.Data[3] & 0xf8) >> 3)
+	e.TypeCode = TypeCode((messageData[3] & 0xf8) >> 3)
 
-	m.Message = data.Data[3:]
+	e.Message = messageData[3:]
 
-	return m.checksumSquitter()
+	return e.checksum()
 }
 
 // Type is the type of message.
-func (m Message) Type() MessageType {
+func (e ExtendedSquitter) Type() MessageType {
 	switch {
-	case m.TypeCode > 0 && m.TypeCode < 5:
+	case e.TypeCode > 0 && e.TypeCode < 5:
 		// Aircraft Identification.
 		return MessageTypeAircraftIdentification
 
-	case m.TypeCode > 4 && m.TypeCode < 9:
+	case e.TypeCode > 4 && e.TypeCode < 9:
 		// Surface position.
 		return MessageTypeSurfacePosition
 
-	case m.TypeCode > 8 && m.TypeCode < 19:
+	case e.TypeCode > 8 && e.TypeCode < 19:
 		// Airborne position (w/Baro Altitude).
 		return MessageTypeAirbornePositionBaroAltitude
 
-	case m.TypeCode == 19:
+	case e.TypeCode == 19:
 		// Airborne velocities.
 		return MessageTypeAirborneVelocities
 
-	case m.TypeCode > 19 && m.TypeCode < 23:
+	case e.TypeCode > 19 && e.TypeCode < 23:
 		// Airborne position (w/GNSS Height).
 		return MessageTypeAirbornePositionGnssHeight
 
-	case m.TypeCode == 28:
+	case e.TypeCode == 28:
 		// Aircraft status.
 		return MessageTypeAircraftStatus
 
-	case m.TypeCode == 29:
+	case e.TypeCode == 29:
 		// Target state and status information.
 		return MessageTypeTargetStateAndStatusInformation
 
-	case m.TypeCode == 31:
+	case e.TypeCode == 31:
 		// Aircraft operation status.
 		return MessageTypeAircraftOperationStatus
 

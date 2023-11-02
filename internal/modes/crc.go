@@ -1,6 +1,8 @@
 package modes
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -23,13 +25,41 @@ var checksumTable = [112]uint32{
 	0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
 }
 
-func (m Message) checksumSquitter() error {
-	data := append(m.ModeS.Raw[:len(m.ModeS.Raw)-3], []byte{0, 0, 0}...)
+func (e ExtendedSquitter) checksum() error {
+	data := append(e.ModeS.Raw[:len(e.ModeS.Raw)-3], []byte{0, 0, 0}...)
 
 	crc := checksumSquitter(data, uint16(8*len(data)))
 
-	if crc != m.ModeS.ParityInterrogator {
-		return errors.Wrap(ErrWrongCRC, fmt.Sprintf("expecting %08X, got %08X", m.ModeS.ParityInterrogator, crc))
+	if crc != e.ModeS.ParityInterrogator {
+		return errors.Wrap(ErrWrongCRC, fmt.Sprintf("expecting %08X, got %08X", e.ModeS.ParityInterrogator, crc))
+	}
+
+	return nil
+}
+
+func (e ExtendedSquitter) checksumv2() error {
+	data := append(e.ModeS.Raw[:len(e.ModeS.Raw)-3], []byte{0, 0, 0, 0, 0, 0, 0, 0, 0}...)
+
+	// x^24 + x^23 +x^22 +x^21 +x^20 +x^19 +x^18 +x^17 +x^16 +x^15 +x^14 +x^13 +x^12 +x^10 +x^3 + 1
+	generator := uint64(0x01fff409)
+
+	for idx := 0; idx < len(e.ModeS.Raw)-24; idx++ {
+		bitIdx := byte(idx % 8)
+		byteIdx := idx / 8
+		mask := byte(80) >> bitIdx
+
+		if data[byteIdx]&mask != 0 {
+			var localdata uint64
+			generatorMask := generator << (32 - bitIdx)
+			_ = binary.Read(bytes.NewReader(data[byteIdx:]), binary.LittleEndian, localdata)
+			localdata = localdata ^ generatorMask
+			buf := bytes.NewBuffer(nil)
+			binary.Write(buf, binary.BigEndian, localdata^generatorMask)
+
+			for idx, b := range buf.Bytes() {
+				data[idx+byteIdx] = b
+			}
+		}
 	}
 
 	return nil

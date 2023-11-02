@@ -18,13 +18,9 @@ func TestUnmarshal(t *testing.T) {
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		modeS := &modes.Frame{}
+		msg := modes.ExtendedSquitter{}
 
-		assert.NoError(t, modeS.Unmarshal(dataByte))
-
-		msg := modes.Message{}
-
-		assert.NoError(t, msg.Unmarshal(*modeS))
+		assert.NoError(t, msg.Unmarshal(dataByte))
 
 		assert.Equal(t, modes.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
 		assert.Equal(t, byte(5), msg.TransponderCapability)
@@ -53,13 +49,9 @@ func TestUnmarshal(t *testing.T) {
 				dataByte, err := hex.DecodeString(msgStr)
 				require.NoError(t, err)
 
-				modeS := &modes.Frame{}
+				msg := modes.ExtendedSquitter{}
 
-				assert.NoError(t, modeS.Unmarshal(dataByte))
-
-				msg := modes.Message{}
-
-				assert.NoError(t, msg.Unmarshal(*modeS))
+				assert.NoError(t, msg.Unmarshal(dataByte))
 			})
 		}
 	})
@@ -77,7 +69,7 @@ func TestUnmarshal(t *testing.T) {
 				dataByte, err := hex.DecodeString(line[1 : len(line)-1])
 				require.NoError(t, err)
 
-				modeS := &modes.Frame{}
+				modeS := &modes.ModeS{}
 
 				assert.NoError(t, modeS.Unmarshal(dataByte))
 			})

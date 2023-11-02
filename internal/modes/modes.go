@@ -28,28 +28,25 @@ const (
 	DownlinkFormatCommDExtendedLengthMessage DownlinkFormat = 24
 )
 
-// Frame is a ModeS frame.
-type Frame struct {
+// ModeS is a ModeS frame.
+type ModeS struct {
 	DownlinkFormat     DownlinkFormat
-	Data               []byte
 	ParityInterrogator uint32
 	Raw                []byte
 }
 
-func (f *Frame) Unmarshal(data []byte) error {
+func (m *ModeS) Unmarshal(data []byte) error {
 	if len(data) < 4 {
 		return ErrWrongMessageSize
 	}
 
 	length := len(data)
 
-	f.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3)
+	m.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3)
 
-	f.Data = data[1 : length-3]
+	m.Raw = data
 
-	f.Raw = data
-
-	f.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + uint32(data[length-1])
+	m.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + uint32(data[length-1])
 
 	return nil
 }

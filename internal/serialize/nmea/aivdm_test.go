@@ -27,7 +27,7 @@ func TestFields(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t,
-		"!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A",
+		"!AIVDM,1,1,,A,15RTgt8PAso;90TKcjM8h6g208CQ,0*42",
 		fields.String(),
 	)
 }

@@ -45,7 +45,7 @@ func TestWriteBits(t *testing.T) {
 		//              1011 10011101 10110001 0111
 		data := make([]byte, 10)
 
-		modes.WriteBits(&data, uint64(0xb9db17), 12, 24)
+		modes.WriteBits(data, uint64(0xb9db17), 12, 24)
 
 		assert.Equal(t, []byte{0x00, 0x0b, 0x9d, 0xb1, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -55,7 +55,7 @@ func TestWriteBits(t *testing.T) {
 		//          11111011 10011101 10110001
 		data := make([]byte, 10)
 
-		modes.WriteBits(&data, uint64(0xfb9db1), 8, 24)
+		modes.WriteBits(data, uint64(0xfb9db1), 8, 24)
 
 		assert.Equal(t, []byte{0x00, 0xfb, 0x9d, 0xb1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -65,7 +65,7 @@ func TestWriteBits(t *testing.T) {
 		//            111011 10011101 10110
 		data := make([]byte, 10)
 
-		modes.WriteBits(&data, uint64(0x773b6), 10, 19)
+		modes.WriteBits(data, uint64(0x773b6), 10, 19)
 
 		assert.Equal(t, []byte{0x00, 0x3b, 0x9d, 0xb0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -79,7 +79,7 @@ func TestWriteBits(t *testing.T) {
 			data[idx] = 0xff
 		}
 
-		modes.WriteBits(&data, uint64(0x773b6), 10, 19)
+		modes.WriteBits(data, uint64(0x773b6), 10, 19)
 
 		assert.Equal(t, []byte{0xff, 0xfb, 0x9d, 0xb7, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
 	})
@@ -93,7 +93,7 @@ func TestWriteBits(t *testing.T) {
 			data[idx] = 0xff
 		}
 
-		modes.WriteBits(&data, uint64(0), 10, 19)
+		modes.WriteBits(data, uint64(0), 10, 19)
 
 		assert.Equal(t, []byte{0xff, 0xc0, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
 	})
@@ -103,7 +103,7 @@ func TestWriteBits(t *testing.T) {
 		//            111111 11111111 11111
 		data := make([]byte, 10)
 
-		modes.WriteBits(&data, uint64(0x7ffff), 10, 19)
+		modes.WriteBits(data, uint64(0x7ffff), 10, 19)
 
 		assert.Equal(t, []byte{0x00, 0x3f, 0xff, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})

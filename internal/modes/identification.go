@@ -4,14 +4,13 @@ const asciiTable = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ##### ###############0123456789##
 
 // Identification id the aircraft identification.
 type Identification struct {
-	Message  ExtendedSquitter
 	Category byte
 	String   string
 }
 
 // Identification id the aircraft identification.
 func (e ExtendedSquitter) Identification() (*Identification, error) {
-	if e.Type() != MessageTypeAircraftIdentification {
+	if e.Type != MessageTypeAircraftIdentification {
 		return nil, ErrWrongMessageType
 	}
 
@@ -32,7 +31,6 @@ func (e ExtendedSquitter) Identification() (*Identification, error) {
 	letters[7] = asciiTable[e.Message[6]&0x3f]
 
 	return &Identification{
-		Message:  e,
 		Category: e.Message[0] & 0x7,
 		String:   string(letters),
 	}, nil

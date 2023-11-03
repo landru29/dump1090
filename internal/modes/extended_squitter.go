@@ -24,6 +24,7 @@ type ExtendedSquitter struct {
 	AircraftAddress       uint32
 	TypeCode              TypeCode
 	Message               []byte
+	Type                  MessageType
 }
 
 type MessageType int
@@ -74,45 +75,42 @@ func (e *ExtendedSquitter) Unmarshal(data []byte) error {
 
 	e.Message = messageData[3:]
 
-	return e.checksum()
-}
-
-// Type is the type of message.
-func (e ExtendedSquitter) Type() MessageType {
 	switch {
 	case e.TypeCode > 0 && e.TypeCode < 5:
 		// Aircraft Identification.
-		return MessageTypeAircraftIdentification
+		e.Type = MessageTypeAircraftIdentification
 
 	case e.TypeCode > 4 && e.TypeCode < 9:
 		// Surface position.
-		return MessageTypeSurfacePosition
+		e.Type = MessageTypeSurfacePosition
 
 	case e.TypeCode > 8 && e.TypeCode < 19:
 		// Airborne position (w/Baro Altitude).
-		return MessageTypeAirbornePositionBaroAltitude
+		e.Type = MessageTypeAirbornePositionBaroAltitude
 
 	case e.TypeCode == 19:
 		// Airborne velocities.
-		return MessageTypeAirborneVelocities
+		e.Type = MessageTypeAirborneVelocities
 
 	case e.TypeCode > 19 && e.TypeCode < 23:
 		// Airborne position (w/GNSS Height).
-		return MessageTypeAirbornePositionGnssHeight
+		e.Type = MessageTypeAirbornePositionGnssHeight
 
 	case e.TypeCode == 28:
 		// Aircraft status.
-		return MessageTypeAircraftStatus
+		e.Type = MessageTypeAircraftStatus
 
 	case e.TypeCode == 29:
 		// Target state and status information.
-		return MessageTypeTargetStateAndStatusInformation
+		e.Type = MessageTypeTargetStateAndStatusInformation
 
 	case e.TypeCode == 31:
 		// Aircraft operation status.
-		return MessageTypeAircraftOperationStatus
+		e.Type = MessageTypeAircraftOperationStatus
 
 	default:
-		return MessageTypeUnsupported
+		e.Type = MessageTypeUnsupported
 	}
+
+	return e.ChecksumSquitter()
 }

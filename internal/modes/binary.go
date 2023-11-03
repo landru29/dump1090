@@ -26,7 +26,7 @@ func ReadBits(data []byte, bitCursor uint64, count uint8) uint64 {
 	}
 }
 
-func WriteBits(data *[]byte, toWrite uint64, bitCursor uint64, count uint8) {
+func WriteBits(data []byte, toWrite uint64, bitCursor uint64, count uint8) {
 	shift := int(count)
 
 	for {
@@ -44,9 +44,9 @@ func WriteBits(data *[]byte, toWrite uint64, bitCursor uint64, count uint8) {
 			byteWrite = byte(toWrite << -shift)
 		}
 
-		(*data)[byteIdx] = (*data)[byteIdx] & mask
+		(data)[byteIdx] = (data)[byteIdx] & mask
 
-		(*data)[byteIdx] = (*data)[byteIdx] | byteWrite
+		(data)[byteIdx] = (data)[byteIdx] | byteWrite
 
 		bitCursor = bitCursor + 8 - uint64(bitIdx)
 

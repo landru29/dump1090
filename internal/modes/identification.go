@@ -8,7 +8,7 @@ type Identification struct {
 	String   string
 }
 
-// Identification id the aircraft identification.
+// Identification is the aircraft identification.
 func (e ExtendedSquitter) Identification() (*Identification, error) {
 	if e.Type != MessageTypeAircraftIdentification {
 		return nil, ErrWrongMessageType

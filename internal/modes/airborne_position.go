@@ -49,8 +49,8 @@ func (e ExtendedSquitter) AirbornePosition() (*AirbornePosition, error) {
 		EncodedAltitude:    (uint16(e.Message[1]) << 4) | (uint16(e.Message[2]) >> 4),
 		TimeUTC:            map[byte]bool{1: true, 0: false}[(e.Message[2]>>3)&0x1],
 		OddFrame:           map[byte]bool{1: true, 0: false}[(e.Message[2]>>2)&0x1],
-		EncodedLatitude:    (uint32(e.Message[2]) << 15) | (uint32(e.Message[3]) << 7) | (uint32(e.Message[4]) >> 1),
-		EncodedLongitude:   (uint32(e.Message[4]) << 16) | (uint32(e.Message[5]) << 8) | uint32(e.Message[6]),
+		EncodedLatitude:    ((uint32(e.Message[2]) & 0x3) << 15) | (uint32(e.Message[3]) << 7) | (uint32(e.Message[4]) >> 1),
+		EncodedLongitude:   ((uint32(e.Message[4]) & 0x1) << 16) | (uint32(e.Message[5]) << 8) | uint32(e.Message[6]),
 		Time:               time.Now(),
 		Baro:               e.Type == MessageTypeAirbornePositionBaroAltitude,
 	}, nil

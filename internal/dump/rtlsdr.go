@@ -1,24 +1,18 @@
 package dump
 
-/*
-  #cgo LDFLAGS: -lrtlsdr -lm
-  #include "rtl-sdr.h"
-  #include <malloc.h>
-
-  extern void goRtlsrdData(unsigned char *buf, uint32_t len, void *ctx);
-
-  int rtlsdrReadAsync(rtlsdr_dev_t *dev, void *ctx, uint32_t buf_num, uint32_t buf_len) {
-	return rtlsdr_read_async(dev, goRtlsrdData, ctx, buf_num, buf_len);
-  }
-
-*/
-import "C"
-
 import (
 	"context"
 	"fmt"
 	"unsafe"
 )
+
+/*
+  #cgo LDFLAGS: -lrtlsdr
+  #include "rtlsdr.h"
+  #include <malloc.h>
+
+*/
+import "C"
 
 // Processer is a data processor.
 type Processer interface {
@@ -58,7 +52,7 @@ func DeviceUsbStrings(index uint32) (string, string, string, error) {
 // OpenDevice opens the device.
 func OpenDevice(index uint32, processor Processer) (*Device, error) {
 	output := Device{
-		dev:       &C.rtlsdr_dev_t{},
+		//dev:       &C.rtlsdr_dev_t{},
 		processor: processor,
 	}
 

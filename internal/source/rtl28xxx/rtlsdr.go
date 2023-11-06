@@ -188,7 +188,9 @@ func (d *Device) ResetBuffer() error {
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
 	newContext := context.WithValue(ctx, deviceInContext{}, d)
 
-	if intErr := C.rtlsdrReadAsync(d.dev, unsafe.Pointer(&newContext), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
+	rtlContext := C.newContext(unsafe.Pointer(&newContext))
+
+	if intErr := C.rtlsdrReadAsync(d.dev, unsafe.Pointer(rtlContext), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
 	}
 
@@ -197,7 +199,9 @@ func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) er
 
 //export goRtlsrdData
 func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
-	ctx := (*context.Context)(unsafe.Pointer(c_ctx))
+	cContext := (*C.context)(unsafe.Pointer(c_ctx))
+	ptr := cContext.goContext
+	ctx := (*context.Context)(ptr)
 	dev := (*ctx).Value(deviceInContext{}).(*Device)
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(len))

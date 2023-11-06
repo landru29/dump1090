@@ -18,4 +18,12 @@ void initTables();
 int messageLengthBit[25];
 uint16_t magnitude[129*129];
 
+typedef struct {
+    void *goContext;
+    unsigned char *remainingData;
+    uint32_t remainingLength;
+} context;
+
+context *newContext(void* goContext);
+
 #endif

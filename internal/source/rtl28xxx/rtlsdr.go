@@ -1,28 +1,30 @@
-package dump
+package rtl28xxx
 
 import (
 	"context"
 	"fmt"
 	"unsafe"
+
+	"github.com/landru29/dump1090/internal/source"
 )
 
 /*
-  #cgo LDFLAGS: -lrtlsdr
+  #cgo LDFLAGS: -lrtlsdr -lm
   #include "rtlsdr.h"
   #include <malloc.h>
 
 */
 import "C"
 
-// Processer is a data processor.
-type Processer interface {
-	Process([]byte)
-}
-
 // Device is a RTL-SDR device.
 type Device struct {
 	dev       *C.rtlsdr_dev_t
-	processor Processer
+	processor source.Processer
+}
+
+// InitTables generates tables for data extract.
+func InitTables() {
+	C.initTables()
 }
 
 // DeviceCount searches for a compatible device.
@@ -50,7 +52,7 @@ func DeviceUsbStrings(index uint32) (string, string, string, error) {
 }
 
 // OpenDevice opens the device.
-func OpenDevice(index uint32, processor Processer) (*Device, error) {
+func OpenDevice(index uint32, processor source.Processer) (*Device, error) {
 	output := Device{
 		//dev:       &C.rtlsdr_dev_t{},
 		processor: processor,
@@ -114,8 +116,7 @@ func (d *Device) TunerGains() ([]int, error) {
 // Manual gain mode must be enabled for this to work.
 //
 // Valid gain values (in tenths of a dB) for the E4000 tuner:
-// -10, 15, 40, 65, 90, 115, 140, 165, 190,
-// 215, 240, 290, 340, 420, 430, 450, 470, 490
+// -10, 15, 40, 65, 90, 115, 140, 165, 190, 215, 240, 290, 340, 420, 430, 450, 470, 490
 func (d *Device) SetTunerGain(gain float64) error {
 	if intErr := C.rtlsdr_set_tuner_gain(d.dev, C.int(gain*10)); intErr != 0 {
 		return fmt.Errorf("RtlsdrSetTunerGain: %d", intErr)

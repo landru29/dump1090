@@ -170,12 +170,12 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
 		"frequency in Hz",
 	)
 
-	rootCommand.PersistentFlags().IntVarP(
+	rootCommand.PersistentFlags().Float64VarP(
 		&config.Gain,
 		"gain",
 		"g",
 		0,
-		"gain",
+		"gain valid values are: 1.5, 4, 6.5, 9, 11.5, 14, 16.5, 19, 21.5, 24, 29, 34, 42, 43, 45, 47, 49",
 	)
 
 	rootCommand.PersistentFlags().VarP(

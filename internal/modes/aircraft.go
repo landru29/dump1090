@@ -1,5 +1,7 @@
 package modes
 
+import "github.com/landru29/dump1090/internal/source"
+
 type Aircraft struct {
 	Identification *Identification
 }
@@ -23,4 +25,8 @@ func (a *Aircraft) Unmarshal(data []byte) error {
 	}
 
 	return nil
+}
+
+func (a Aircraft) ToSource() source.Aircraft {
+	return source.Aircraft{}
 }

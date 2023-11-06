@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/landru29/dump1090/internal/dump"
 	"github.com/landru29/dump1090/internal/serialize"
+	"github.com/landru29/dump1090/internal/source"
 )
 
 //go:embed public/*
@@ -28,7 +28,7 @@ const (
 
 // Transporter is the http transporter.
 type Transporter struct {
-	aircraftPool map[uint32]*dump.Aircraft
+	aircraftPool map[uint32]*source.Aircraft
 	mutex        sync.Mutex
 	formaters    map[string]serialize.Serializer
 }
@@ -38,7 +38,7 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 	subFS, _ := fs.Sub(staticFiles, "public")
 
 	output := Transporter{
-		aircraftPool: make(map[uint32]*dump.Aircraft),
+		aircraftPool: make(map[uint32]*source.Aircraft),
 		formaters:    map[string]serialize.Serializer{},
 	}
 
@@ -81,7 +81,7 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 }
 
 // Transport implements the transport.Transporter interface.
-func (t *Transporter) Transport(ac *dump.Aircraft) error {
+func (t *Transporter) Transport(ac *source.Aircraft) error {
 	t.mutex.Lock()
 	t.aircraftPool[ac.Addr] = ac
 	t.mutex.Unlock()
@@ -100,7 +100,7 @@ func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	dataArray := []*dump.Aircraft{}
+	dataArray := []*source.Aircraft{}
 	for _, elt := range t.aircraftPool {
 		dataArray = append(dataArray, elt)
 	}

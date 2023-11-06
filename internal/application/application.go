@@ -3,9 +3,11 @@ package application
 
 import (
 	"context"
-	"log"
 
-	"github.com/landru29/dump1090/internal/dump"
+	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/source"
+	"github.com/landru29/dump1090/internal/source/file"
+	"github.com/landru29/dump1090/internal/source/rtl28xxx"
 	"github.com/landru29/dump1090/internal/transport"
 )
 
@@ -16,54 +18,57 @@ const (
 // Config is the application configuration.
 type Config struct {
 	FixturesFilename string
+	FixtureLoop      bool
 	DeviceIndex      uint32
 	Frequency        uint32
-	Gain             int
+	Gain             float64
 	EnableAGC        bool
 }
 
 // App is the main application.
 type App struct {
-	cfg         *Config
-	tranporters []transport.Transporter
+	starter source.Starter
 }
 
 // New creates a new application.
 func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
-	return &App{
-		cfg:         cfg,
-		tranporters: tranporters,
-	}, nil
+	output := &App{}
+
+	if cfg.FixturesFilename != "" {
+		opts := []file.Configurator{}
+		if cfg.FixtureLoop {
+			opts = append(opts, file.WithLoop())
+		}
+
+		output.starter = file.New(cfg.FixturesFilename, modes.New(tranporters), opts...)
+	} else {
+		rtl28xxx.InitTables()
+
+		opts := []rtl28xxx.Configurator{}
+
+		if cfg.DeviceIndex > 0 {
+			opts = append(opts, rtl28xxx.WithDeviceIndex(int(cfg.DeviceIndex)))
+		}
+
+		if cfg.EnableAGC {
+			opts = append(opts, rtl28xxx.WithAGC())
+		}
+
+		if cfg.Frequency > 0 {
+			opts = append(opts, rtl28xxx.WithFrequency(cfg.Frequency))
+		}
+
+		if cfg.Gain > 0 {
+			opts = append(opts, rtl28xxx.WithGain(cfg.Gain))
+		}
+
+		output.starter = rtl28xxx.New(modes.New(tranporters), opts...)
+	}
+
+	return output, nil
 }
 
 // Start is the application entrypoint.
 func (a *App) Start(ctx context.Context, loop bool) error {
-	eventAircraft := make(chan *dump.Aircraft, acChannelSize)
-	defer func() {
-		close(eventAircraft)
-	}()
-
-	go func(acStream chan *dump.Aircraft) {
-		for {
-			ac := <-acStream
-
-			for _, transporter := range a.tranporters {
-				if err := transporter.Transport(ac); err != nil {
-					log.Println(err)
-				}
-			}
-		}
-	}(eventAircraft)
-
-	return dump.Start(
-		ctx,
-		a.cfg.DeviceIndex,
-		a.cfg.Gain,
-		a.cfg.Frequency,
-		a.cfg.EnableAGC,
-		a.cfg.FixturesFilename,
-		nil,
-		eventAircraft,
-		loop,
-	)
+	return a.starter.Start(ctx)
 }

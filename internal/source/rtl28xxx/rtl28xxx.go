@@ -41,6 +41,10 @@ func New(processer source.Processer, opts ...Configurator) *Source {
 		enableAGC:   false,
 	}
 
+	for _, opt := range opts {
+		opt(output)
+	}
+
 	return output
 }
 

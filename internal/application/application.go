@@ -6,7 +6,6 @@ import (
 
 	"github.com/landru29/dump1090/internal/modes"
 	"github.com/landru29/dump1090/internal/source"
-	"github.com/landru29/dump1090/internal/source/file"
 	"github.com/landru29/dump1090/internal/source/rtl28xxx"
 	"github.com/landru29/dump1090/internal/transport"
 )
@@ -35,12 +34,12 @@ func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	output := &App{}
 
 	if cfg.FixturesFilename != "" {
-		opts := []file.Configurator{}
+		opts := []rtl28xxx.FileConfigurator{}
 		if cfg.FixtureLoop {
-			opts = append(opts, file.WithLoop())
+			opts = append(opts, rtl28xxx.WithLoop())
 		}
 
-		output.starter = file.New(cfg.FixturesFilename, modes.New(tranporters), opts...)
+		output.starter = rtl28xxx.NewFile(cfg.FixturesFilename, modes.New(tranporters), opts...)
 	} else {
 		rtl28xxx.InitTables()
 

@@ -186,7 +186,7 @@ func (d *Device) ResetBuffer() error {
 // ReadAsync reads samples from the device asynchronously. This function will block until
 // it is being canceled using rtlsdr_cancel_async()
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	newContext := context.WithValue(ctx, deviceInContext{}, d)
+	newContext := context.WithValue(ctx, deviceInContext{}, d.processor)
 
 	rtlContext := C.newContext(unsafe.Pointer(&newContext))
 
@@ -202,13 +202,11 @@ func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
 	cContext := (*C.context)(unsafe.Pointer(c_ctx))
 	ptr := cContext.goContext
 	ctx := (*context.Context)(ptr)
-	dev := (*ctx).Value(deviceInContext{}).(*Device)
+	processor := (*ctx).Value(deviceInContext{}).(source.Processer)
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(len))
 
-	dev.processor.Process(mySlice)
-
-	fmt.Println(dev)
+	processor.Process(mySlice)
 }
 
 type deviceInContext struct{}

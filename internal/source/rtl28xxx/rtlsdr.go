@@ -3,6 +3,8 @@ package rtl28xxx
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"time"
 	"unsafe"
 
 	"github.com/landru29/dump1090/internal/source"
@@ -15,6 +17,14 @@ import (
 
 */
 import "C"
+
+var contextMapper map[string]any
+
+func init() {
+	contextMapper = map[string]any{}
+	rand.Seed(time.Now().UnixNano())
+	InitTables()
+}
 
 // Device is a RTL-SDR device.
 type Device struct {
@@ -186,9 +196,11 @@ func (d *Device) ResetBuffer() error {
 // ReadAsync reads samples from the device asynchronously. This function will block until
 // it is being canceled using rtlsdr_cancel_async()
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	newContext := context.WithValue(ctx, deviceInContext{}, d.processor)
+	key := saveContext(context.WithValue(ctx, deviceInContext{}, d.processor))
 
-	rtlContext := C.newContext(unsafe.Pointer(&newContext))
+	cKey := unsafe.Pointer(C.CString(string(key)))
+
+	rtlContext := C.newContext(cKey)
 
 	if intErr := C.rtlsdrReadAsync(d.dev, unsafe.Pointer(rtlContext), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
@@ -197,12 +209,31 @@ func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) er
 	return nil
 }
 
+func processRaw(ctx context.Context, data []byte, processor source.Processer) {
+	key := saveContext(context.WithValue(ctx, deviceInContext{}, processor))
+
+	cKey := unsafe.Pointer(C.CString(string(key)))
+
+	cContext := C.newContext(cKey)
+
+	rtlContext := unsafe.Pointer(cContext)
+
+	cstr := (*C.uchar)(unsafe.Pointer(C.CString(string(data))))
+
+	C.rtlsdrProcessRaw(cstr, C.uint(len(data)), rtlContext)
+
+	C.free(unsafe.Pointer(cstr))
+
+	disposeContext(key)
+}
+
 //export goRtlsrdData
 func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
 	cContext := (*C.context)(unsafe.Pointer(c_ctx))
-	ptr := cContext.goContext
-	ctx := (*context.Context)(ptr)
-	processor := (*ctx).Value(deviceInContext{}).(source.Processer)
+	ptr := (*C.char)(cContext.goContext)
+
+	ctx := getContext(C.GoString(ptr))
+	processor := ctx.Value(deviceInContext{}).(source.Processer)
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(len))
 
@@ -210,3 +241,25 @@ func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
 }
 
 type deviceInContext struct{}
+
+func saveContext(ctx context.Context) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, 10)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+
+	key := string(b)
+
+	contextMapper[key] = ctx
+
+	return key
+}
+
+func getContext(key string) context.Context {
+	return contextMapper[key].(context.Context)
+}
+
+func disposeContext(key string) {
+	delete(contextMapper, key)
+}

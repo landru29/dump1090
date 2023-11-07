@@ -1,6 +1,11 @@
 package modes
 
-import "github.com/landru29/dump1090/internal/transport"
+import (
+	"encoding/hex"
+	"fmt"
+
+	"github.com/landru29/dump1090/internal/transport"
+)
 
 // Process is the data processor.
 type Process struct {
@@ -15,4 +20,6 @@ func New(transporters []transport.Transporter) *Process {
 }
 
 // Process implements source.Processor the interface.
-func (p Process) Process(data []byte) {}
+func (p Process) Process(data []byte) {
+	fmt.Println(hex.EncodeToString(data))
+}

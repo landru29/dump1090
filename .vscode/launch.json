@@ -12,8 +12,8 @@
             "program": "${workspaceFolder}/cmd/dump1090",
             "cwd": "${workspaceFolder}",
             "args": [
-                "--screen", "basestation",
-                "--http", "0.0.0.0:8080",
+                "--screen", "base-station",
+                "--fixture-file", "testdata/modes1.bin",
             ]
         },
         {

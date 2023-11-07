@@ -1,3 +1,4 @@
 deb.*
 bin.*
 /dump1090
+*.txt

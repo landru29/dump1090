@@ -4,17 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
-	"unsafe"
 
 	"github.com/landru29/dump1090/internal/source"
 )
-
-/*
-  #cgo LDFLAGS: -lrtlsdr -lm
-  #include "rtlsdr.h"
-
-*/
-import "C"
 
 type Reader struct {
 	reader io.Reader
@@ -31,10 +23,6 @@ func NewReader(rd io.Reader, processor source.Processer) *Reader {
 
 // Start implements the source.Starter interface.
 func (r *Reader) Start(ctx context.Context) error {
-	newContext := context.WithValue(ctx, deviceInContext{}, r.processor)
-
-	rtlContext := unsafe.Pointer(C.newContext(unsafe.Pointer(&newContext)))
-
 	for {
 		data := make([]byte, 1024)
 		cnt, err := r.reader.Read(data)
@@ -46,10 +34,6 @@ func (r *Reader) Start(ctx context.Context) error {
 			return err
 		}
 
-		cstr := (*C.uchar)(unsafe.Pointer(C.CString(string(data[:cnt]))))
-
-		C.rtlsdrCallback(cstr, C.uint(cnt), rtlContext)
-
-		C.free(unsafe.Pointer(cstr))
+		processRaw(ctx, data[:cnt], r.processor)
 	}
 }

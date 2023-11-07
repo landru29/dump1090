@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"syscall"
 
 	"github.com/landru29/dump1090/internal/source"
 )
@@ -55,7 +56,11 @@ func (s *SourceFile) Start(ctx context.Context) error {
 		}
 	}
 
-	return s.start(ctx)
+	err := s.start(ctx)
+
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+
+	return err
 }
 
 func (s *SourceFile) start(ctx context.Context) error {

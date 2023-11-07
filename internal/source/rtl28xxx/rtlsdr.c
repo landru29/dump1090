@@ -1,98 +1,148 @@
 #include "rtlsdr.h"
 #include <math.h>
 #include <malloc.h>
+#include <string.h>
+#include <stdio.h>
 
-#define REMAINING_BUFFER_SIZE 112 * 2
+#define MAGNITUDE_ENCODED_BIT_SIZE             2                                                // 2 uint16_t
+#define REMAINING_MAGNITUDE_BUFFER_SIZE        MODES_LONG_MSG_BITS * MAGNITUDE_ENCODED_BIT_SIZE
 
-void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
+int messageLengthBit[25];
+uint16_t magnitude[129*129];
+
+
+void printValue(uint16_t val) {
+    printf("[");
+    for(int l = 0; l<val/512; l++) {
+        printf("=");
+    }
+    printf(">\n");
+}
+
+void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void *ctx) {
     unsigned char message[14];
     int cursor = 0;
-
     context *currentCtx = (context*)ctx;
 
-    unsigned char* data = (unsigned char*)malloc(len/2 + currentCtx->remainingLength);
+    int magnitudeBufferLength = byteBufferLength + currentCtx->remainingMagnitudeLength;
 
-    if ((currentCtx->remainingLength>0) && (currentCtx->remainingData != 0)) {
-        memcpy(data, currentCtx->remainingData, currentCtx->remainingLength);
+    uint16_t* magnitudeBuffer = (uint16_t*)malloc(magnitudeBufferLength);
 
-        cursor = currentCtx->remainingLength;
+    if ((currentCtx->remainingMagnitudeLength>0) && (currentCtx->remainingMagnitudeData != 0)) {
+        memcpy(magnitudeBuffer, currentCtx->remainingMagnitudeData, currentCtx->remainingMagnitudeLength);
+
+        cursor = currentCtx->remainingMagnitudeLength;
     }
 
-    for(int idx = 0; idx<len/2; idx++) {
-        int i = buf[idx*2]-127;
-        int q = buf[idx*2+1]-127;
+    // computes magnitudes
+    for(int idx = 0; idx<byteBufferLength/2; idx++) {
+        int i = byteBuffer[idx*2];
+        int q = byteBuffer[idx*2+1];
+
+        printf("%02x/%02x  |   ", i, q);
 
         if (i>127) {
-            i = i + (i ^ 0xff);
+            i = i - 127;
+        } else {
+            i = 127 - i;
         }
 
         if (q>127) {
-            q = q + (q ^ 0xff);
+            q = q - 127;
+        } else {
+            q = 127 - q;
         }
 
-        data[idx+cursor] = magnitude[i*129+q];
+        printf("%02x/%02x => %04x  ", i, q, magnitude[i*129+q]);
+        printValue(magnitude[i*129+q]);
+
+        magnitudeBuffer[idx+cursor] = magnitude[i*129+q];
     }
 
+
+    // Signature detection:
     //       |   |         |   |
     //       |   |         |   |
     //       |   |         |   |
     //       |   |         |   |
     //       | | | | | | | | | | | | | | | |
     //       0 1 2 3 4 5 6 7 8 9 10
-
     int idx = 0;
-    for(int idx = 0; idx<len/2 - REMAINING_BUFFER_SIZE; idx++)  {
-        if (data[idx] < data[idx+1]) {
+    for(int idx = 0; idx<magnitudeBufferLength - REMAINING_MAGNITUDE_BUFFER_SIZE; idx++)  {
+        if (magnitudeBuffer[idx] <= magnitudeBuffer[idx+1]) {
             continue;
         }
 
-        if (data[idx+1] > data[idx+2]) {
+        if (magnitudeBuffer[idx+1] >= magnitudeBuffer[idx+2]) {
             continue;
         }
 
-        if (data[idx+2] < data[idx+3]) {
+        if (magnitudeBuffer[idx+2] <= magnitudeBuffer[idx+3]) {
             continue;
         }
-        if (data[idx+2] < data[idx+4]) {
+        if (magnitudeBuffer[idx+2] <= magnitudeBuffer[idx+4]) {
             continue;
         }
-        if (data[idx+2] < data[idx+5]) {
+        if (magnitudeBuffer[idx+2] <= magnitudeBuffer[idx+5]) {
             continue;
         }
-        if (data[idx+2] < data[idx+6]) {
-            continue;
-        }
-
-        if (data[idx+6] > data[idx+7]) {
+        if (magnitudeBuffer[idx+2] <= magnitudeBuffer[idx+6]) {
             continue;
         }
 
-        if (data[idx+7] < data[idx+8]) {
+        if (magnitudeBuffer[idx+6] >= magnitudeBuffer[idx+7]) {
             continue;
         }
 
-        if (data[idx+8] > data[idx+9]) {
+        if (magnitudeBuffer[idx+7] <= magnitudeBuffer[idx+8]) {
             continue;
         }
 
-        if (data[idx+9] < data[idx+10]) {
+        if (magnitudeBuffer[idx+8] >= magnitudeBuffer[idx+9]) {
             continue;
         }
-        if (data[idx+9] < data[idx+11]) {
+
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+10]) {
             continue;
         }
-        if (data[idx+9] < data[idx+12]) {
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+11]) {
             continue;
         }
-        if (data[idx+9] < data[idx+13]) {
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+12]) {
             continue;
         }
-        if (data[idx+9] < data[idx+14]) {
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+13]) {
             continue;
         }
-        if (data[idx+9] < data[idx+15]) {
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+14]) {
             continue;
         }
+        if (magnitudeBuffer[idx+9] <= magnitudeBuffer[idx+15]) {
+            continue;
+        }
+
+        uint16_t meanHigh = (uint16_t)(
+            (
+                (uint32_t)(magnitudeBuffer[idx]) + 
+                (uint32_t)(magnitudeBuffer[idx + 2]) + 
+                (uint32_t)(magnitudeBuffer[idx + 7]) + 
+                (uint32_t)(magnitudeBuffer[idx + 9])
+            ) / 4
+        );
+
+        if (
+            (magnitudeBuffer[idx]/meanHigh>2) || 
+            (magnitudeBuffer[idx+2]/meanHigh>2) || 
+            (magnitudeBuffer[idx+2]/meanHigh>7) || 
+            (magnitudeBuffer[idx+9]/meanHigh>2)
+            ) {
+            continue;
+        }
+
+        for(int k=0; k<16; k++) {
+            printValue(magnitudeBuffer[idx+k]);
+        }
+        printf("\n\n");
 
         memset(message, 0, 14);
 
@@ -103,11 +153,11 @@ void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
             int byteIndex = index / 8;
             int bitIndex = index % 8;
 
-            if ((index==0) && (data[startOfMessage+index*2] > data[startOfMessage+index*2+1])) {
-                messageLength == 112;
+            if ((index==0) && (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1])) {
+                messageLength = 112;
             }
 
-            unsigned char bit = (data[startOfMessage+index*2] > data[startOfMessage+index*2+1]);
+            unsigned char bit = (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1]);
 
             message[byteIndex] |= bit << bitIndex;
         }
@@ -115,23 +165,29 @@ void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
         goRtlsrdData(message, messageLength / 8, ctx);
     }
 
-    if (currentCtx->remainingData != 0) {
-        currentCtx->remainingLength = REMAINING_BUFFER_SIZE;
-        memcpy(currentCtx->remainingData, &data[len/2 - REMAINING_BUFFER_SIZE], REMAINING_BUFFER_SIZE);
+    printf("Copying data from %d, size %d\n", magnitudeBufferLength - REMAINING_MAGNITUDE_BUFFER_SIZE, REMAINING_MAGNITUDE_BUFFER_SIZE);
+
+    // Copy remaining data in the context.
+    if (currentCtx->remainingMagnitudeData != 0) {
+        currentCtx->remainingMagnitudeLength = REMAINING_MAGNITUDE_BUFFER_SIZE;
+        memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeBufferLength - REMAINING_MAGNITUDE_BUFFER_SIZE], REMAINING_MAGNITUDE_BUFFER_SIZE);
     }
+
+    free(magnitudeBuffer);
 }
 
 context *newContext(void* goContext) {
-    context output;
-    output.goContext = goContext;
-    output.remainingData = (unsigned char*)malloc(REMAINING_BUFFER_SIZE);
-    output.remainingLength = 0;
+    context *output = (context*)malloc(sizeof(context));
+    output->goContext = goContext;
+    output->remainingMagnitudeData = (uint16_t*)malloc(REMAINING_MAGNITUDE_BUFFER_SIZE);
+    output->remainingMagnitudeLength = 0;
 
-    return &output;
+    return output;
 }
 
+
 int rtlsdrReadAsync(rtlsdr_dev_t *dev, void *ctx, uint32_t buf_num, uint32_t buf_len) {
-    return rtlsdr_read_async(dev, rtlsdrCallback, ctx, buf_num, buf_len);
+    return rtlsdr_read_async(dev, rtlsdrProcessRaw, ctx, buf_num, buf_len);
 }
 
 void initTables() {

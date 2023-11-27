@@ -39,7 +39,7 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
         int i = byteBuffer[idx*2];
         int q = byteBuffer[idx*2+1];
 
-        printf("%02x/%02x  |   ", i, q);
+        // printf("%02x/%02x  |   ", i, q);
 
         if (i>127) {
             i = i - 127;
@@ -53,8 +53,8 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
             q = 127 - q;
         }
 
-        printf("%02x/%02x => %04x  ", i, q, magnitude[i*129+q]);
-        printValue(magnitude[i*129+q]);
+        // printf("%02x/%02x => %04x  ", i, q, magnitude[i*129+q]);
+        // printValue(magnitude[i*129+q]);
 
         magnitudeBuffer[idx+cursor] = magnitude[i*129+q];
     }
@@ -69,6 +69,9 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
     //       0 1 2 3 4 5 6 7 8 9 10
     int idx = 0;
     for(int idx = 0; idx<magnitudeBufferLength - REMAINING_MAGNITUDE_BUFFER_SIZE; idx++)  {
+        printf("[foo] magnitude %04x  ", magnitudeBuffer[idx]);
+        printValue(magnitudeBuffer[idx]);
+
         if (magnitudeBuffer[idx] <= magnitudeBuffer[idx+1]) {
             continue;
         }
@@ -138,6 +141,8 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
             ) {
             continue;
         }
+
+        printf("[foo] _____________________________________________________________________________________________ good preambule ________________________________________________________________________________________\n");
 
         for(int k=0; k<16; k++) {
             printValue(magnitudeBuffer[idx+k]);

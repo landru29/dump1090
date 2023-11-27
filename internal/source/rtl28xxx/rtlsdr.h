@@ -15,7 +15,7 @@
 typedef struct {
     void *goContext;
     uint16_t *remainingMagnitudeData;
-    uint32_t remainingMagnitudeLength;
+    uint32_t remainingMagnitudeLengthByte;
 } context;
 
 extern int messageLengthBit[25];

@@ -10,8 +10,20 @@
 
 // ADSB message is 448 bytes.
 
-#define MAGNITUDE_ENCODED_BIT_SIZE                2                                                // 2 uint16_t
-#define REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16    MODES_LONG_MSG_BITS * MAGNITUDE_ENCODED_BIT_SIZE
+// I: 1 byte, Q: 1 byte
+#define IQ_SIZE                         2
+
+// 10 => 1, 01 => 0
+#define MAGNITUDE_ENCODED_BIT_SIZE      2
+
+// Number of all magnitudes for a long message
+#define MAGNITUDE_LONG_MSG_SIZE         MODES_LONG_MSG_BITS * MAGNITUDE_ENCODED_BIT_SIZE
+
+// Size in memory of all magnitudes for a long message (each magnitude is uint16)
+#define MAGNITUDE_LONG_MSG_BYTE_SIZE    MAGNITUDE_LONG_MSG_SIZE * 2
+
+// Number of bytes for a long message
+#define IQ_LONG_MSG_SIZE                MAGNITUDE_LONG_MSG_SIZE * IQ_SIZE
 
 int messageLengthBit[25];
 uint16_t magnitude[129*129];
@@ -25,34 +37,22 @@ void printValue(uint16_t val) {
     printf(">\n");
 }
 
-void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void *ctx) {
-    unsigned char message[14];
+uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength, void *ctx, uint32_t *size)  {
     int cursor = 0;
     context *currentCtx = (context*)ctx;
 
-    int magnitudeBufferLengthByte = byteBufferLength + currentCtx->remainingMagnitudeLengthByte;
+    int magnitudeBufferLengthByte = (byteBufferLength * sizeof(uint16_t) / IQ_SIZE) + currentCtx->remainingMagnitudeLengthByte;
 
     uint16_t* magnitudeBuffer = (uint16_t*)malloc(magnitudeBufferLengthByte);
-
-    printf("<<<<<<<<<<<<<<<< %d >>>>>>>>>>>>>>>>>\n", byteBufferLength);
 
     if ((currentCtx->remainingMagnitudeLengthByte>0) && (currentCtx->remainingMagnitudeData != 0)) {
         memcpy(magnitudeBuffer, currentCtx->remainingMagnitudeData, currentCtx->remainingMagnitudeLengthByte);
 
         cursor = currentCtx->remainingMagnitudeLengthByte;
-
-        // printf(" ==========================================>>>> \n");
-        // for(int idx = 0; idx<currentCtx->remainingMagnitudeLengthByte/2; idx++)  {
-        //     printf("[foo] magnitude %04x  ", magnitudeBuffer[idx]);
-        //     printValue(magnitudeBuffer[idx]);
-        // }
-        // printf(" <<<<<========================================== \n");
     }
 
-    int magnitudeCount = byteBufferLength/2;
-
     // computes magnitudes
-    for(int idx = 0; idx<magnitudeCount; idx++) {
+    for(int idx = 0; idx<byteBufferLength/2; idx++) {
         int i = byteBuffer[idx*2];
         int q = byteBuffer[idx*2+1];
 
@@ -71,6 +71,19 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
         magnitudeBuffer[idx+cursor] = magnitude[i*129+q];
     }
 
+    *size = magnitudeBufferLengthByte/2;
+
+    return magnitudeBuffer;
+}
+
+void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void *ctx) {
+    unsigned char message[14];
+    uint32_t magnitudeCount;
+    context *currentCtx = (context*)ctx;
+
+    uint16_t *magnitudeBuffer = computeMagnitudes(byteBuffer, byteBufferLength, ctx, &magnitudeCount);
+
+    uint32_t magnitudeBufferLengthByte = magnitudeCount * 2;
 
     // Signature detection:
     //       |   |         |   |
@@ -79,7 +92,7 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
     //       |   |         |   |
     //       | | | | | | | | | | | | | | | |
     //       0 1 2 3 4 5 6 7 8 9 10
-    for(int idx = 0; idx<magnitudeCount - REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16; idx++)  {
+    for(int idx = 0; idx<magnitudeCount - MAGNITUDE_LONG_MSG_SIZE; idx++)  {
         printf("[foo] magnitude %04x  ", magnitudeBuffer[idx]);
         printValue(magnitudeBuffer[idx]);
 
@@ -162,18 +175,24 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
 
         memset(message, 0, 14);
 
-        int startOfMessage = idx+16;
-        int messageLength = 56;
+        int startOfMessage = idx+16; // skip the preambule of 8µs
+        int messageLength = MODES_SHORT_MSG_BITS;
+
+        // +----------+--------------+-----------+
+        // |  DF (5)  | (83) or (27) |  PI (24)  |
+        // +----------+--------------+-----------+
 
         for(int index=0; index<messageLength; index++) {
             int byteIndex = index / 8;
             int bitIndex = index % 8;
 
-            if ((index==0) && (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1])) {
-                messageLength = 112;
-            }
-
             unsigned char bit = (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1]);
+
+            if ((index==0) && (bit==1)) {
+                messageLength = MODES_LONG_MSG_BITS;
+                // If the first bit of DF is 1, this means the message will be long 112 bits
+                // otherwise, the message will be short 56 bits
+            }
 
             message[byteIndex] |= bit << bitIndex;
         }
@@ -181,12 +200,12 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
         goRtlsrdData(message, messageLength / 8, ctx);
     }
 
-    printf("Copying data from %d, size %d\n", magnitudeBufferLengthByte - REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16, REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16);
+    printf("Copying data from %d, size %d\n", magnitudeBufferLengthByte - MAGNITUDE_LONG_MSG_SIZE, MAGNITUDE_LONG_MSG_SIZE);
 
     // Copy remaining data in the context.
     if (currentCtx->remainingMagnitudeData != 0) {
-        currentCtx->remainingMagnitudeLengthByte = REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16 * sizeof(uint16_t);
-        memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeCount - REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16], REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16 * sizeof(uint16_t));
+        currentCtx->remainingMagnitudeLengthByte = MAGNITUDE_LONG_MSG_BYTE_SIZE;
+        memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeCount - MAGNITUDE_LONG_MSG_SIZE], MAGNITUDE_LONG_MSG_BYTE_SIZE);
     }
 
     free(magnitudeBuffer);
@@ -195,7 +214,7 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
 context *newContext(void* goContext) {
     context *output = (context*)malloc(sizeof(context));
     output->goContext = goContext;
-    output->remainingMagnitudeData = (uint16_t*)malloc(REMAINING_MAGNITUDE_BUFFER_SIZE_UINT16 * sizeof(uint16_t));
+    output->remainingMagnitudeData = (uint16_t*)malloc(MAGNITUDE_LONG_MSG_SIZE * sizeof(uint16_t));
     output->remainingMagnitudeLengthByte = 0;
 
     return output;

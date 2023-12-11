@@ -38,7 +38,8 @@ void printValue(uint16_t val) {
 }
 
 uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength, void *ctx, uint32_t *size)  {
-    int cursor = 0;
+    printf("#####################################\n");
+    int startIdx = 0;
     context *currentCtx = (context*)ctx;
 
     int magnitudeBufferLengthByte = (byteBufferLength * sizeof(uint16_t) / IQ_SIZE) + currentCtx->remainingMagnitudeLengthByte;
@@ -46,15 +47,16 @@ uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength
     uint16_t* magnitudeBuffer = (uint16_t*)malloc(magnitudeBufferLengthByte);
 
     if ((currentCtx->remainingMagnitudeLengthByte>0) && (currentCtx->remainingMagnitudeData != 0)) {
+        printf("copying %d bytes\n",currentCtx->remainingMagnitudeLengthByte);
         memcpy(magnitudeBuffer, currentCtx->remainingMagnitudeData, currentCtx->remainingMagnitudeLengthByte);
 
-        cursor = currentCtx->remainingMagnitudeLengthByte;
+        startIdx = currentCtx->remainingMagnitudeLengthByte / sizeof(uint16_t);
     }
 
     // computes magnitudes
-    for(int idx = 0; idx<byteBufferLength/2; idx++) {
-        int i = byteBuffer[idx*2];
-        int q = byteBuffer[idx*2+1];
+    for(int idx = 0; idx<byteBufferLength/IQ_SIZE; idx++) {
+        int i = byteBuffer[idx*IQ_SIZE];
+        int q = byteBuffer[idx*IQ_SIZE+1];
 
         if (i>127) {
             i = i - 127;
@@ -68,7 +70,7 @@ uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength
             q = 127 - q;
         }
 
-        magnitudeBuffer[idx+cursor] = magnitude[i*129+q];
+        magnitudeBuffer[idx+startIdx] = magnitude[i*129+q];
     }
 
     *size = magnitudeBufferLengthByte/2;
@@ -200,11 +202,12 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
         goRtlsrdData(message, messageLength / 8, ctx);
     }
 
-    printf("Copying data from %d, size %d\n", magnitudeBufferLengthByte - MAGNITUDE_LONG_MSG_SIZE, MAGNITUDE_LONG_MSG_SIZE);
+    
 
     // Copy remaining data in the context.
     if (currentCtx->remainingMagnitudeData != 0) {
         currentCtx->remainingMagnitudeLengthByte = MAGNITUDE_LONG_MSG_BYTE_SIZE;
+        printf("Copying data from %ld, size %d\n", (magnitudeCount - MAGNITUDE_LONG_MSG_SIZE) * sizeof(uint16_t), currentCtx->remainingMagnitudeLengthByte);
         memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeCount - MAGNITUDE_LONG_MSG_SIZE], MAGNITUDE_LONG_MSG_BYTE_SIZE);
     }
 

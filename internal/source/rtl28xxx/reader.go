@@ -23,6 +23,8 @@ func NewReader(rd io.Reader, processor source.Processer) *Reader {
 
 // Start implements the source.Starter interface.
 func (r *Reader) Start(ctx context.Context) error {
+	cContext := newCcontext(ctx, r.processor)
+
 	for {
 		data := make([]byte, 1024)
 		cnt, err := r.reader.Read(data)
@@ -34,6 +36,6 @@ func (r *Reader) Start(ctx context.Context) error {
 			return err
 		}
 
-		processRaw(ctx, data[:cnt], r.processor)
+		processRaw(ctx, data[:cnt], cContext)
 	}
 }

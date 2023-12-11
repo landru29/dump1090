@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "cgo",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/dump1090",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--fixture-file", "testdata/modes1.bin",
+            ]
+        },
+        {
             "name": "Dump1090",
             "type": "go",
             "request": "launch",

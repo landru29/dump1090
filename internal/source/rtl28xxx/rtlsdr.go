@@ -193,38 +193,30 @@ func (d *Device) ResetBuffer() error {
 	return nil
 }
 
-// ReadAsync reads samples from the device asynchronously. This function will block until
-// it is being canceled using rtlsdr_cancel_async()
-func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	key := saveContext(context.WithValue(ctx, deviceInContext{}, d.processor))
+func newCcontext(ctx context.Context, processor source.Processer) unsafe.Pointer {
+	key := saveContext(context.WithValue(ctx, deviceInContext{}, processor))
 
 	cKey := unsafe.Pointer(C.CString(string(key)))
 
-	rtlContext := C.newContext(cKey)
+	return unsafe.Pointer(C.newContext(cKey))
+}
 
-	if intErr := C.rtlsdrReadAsync(d.dev, unsafe.Pointer(rtlContext), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
+// ReadAsync reads samples from the device asynchronously. This function will block until
+// it is being canceled using rtlsdr_cancel_async()
+func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
+	if intErr := C.rtlsdrReadAsync(d.dev, newCcontext(ctx, d.processor), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
 	}
 
 	return nil
 }
 
-func processRaw(ctx context.Context, data []byte, processor source.Processer) {
-	key := saveContext(context.WithValue(ctx, deviceInContext{}, processor))
-
-	cKey := unsafe.Pointer(C.CString(string(key)))
-
-	cContext := C.newContext(cKey)
-
-	rtlContext := unsafe.Pointer(cContext)
-
+func processRaw(ctx context.Context, data []byte, cContext unsafe.Pointer) {
 	cstr := (*C.uchar)(unsafe.Pointer(C.CString(string(data))))
 
-	C.rtlsdrProcessRaw(cstr, C.uint(len(data)), rtlContext)
+	C.rtlsdrProcessRaw(cstr, C.uint(len(data)), cContext)
 
 	C.free(unsafe.Pointer(cstr))
-
-	disposeContext(key)
 }
 
 //export goRtlsrdData

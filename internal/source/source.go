@@ -12,3 +12,9 @@ type Starter interface {
 type Processer interface {
 	Process(data []byte)
 }
+
+// EmptyProcessor is an empty processor.
+type EmptyProcessor struct{}
+
+// Process implements the Processer interface.
+func (e EmptyProcessor) Process(data []byte) {}

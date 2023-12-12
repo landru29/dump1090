@@ -33,13 +33,18 @@ type App struct {
 func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 	output := &App{}
 
+	var processor source.Processer = modes.New(tranporters)
+
+	// TODO: to remove
+	processor = source.EmptyProcessor{}
+
 	if cfg.FixturesFilename != "" {
 		opts := []rtl28xxx.FileConfigurator{}
 		if cfg.FixtureLoop {
 			opts = append(opts, rtl28xxx.WithLoop())
 		}
 
-		output.starter = rtl28xxx.NewFile(cfg.FixturesFilename, modes.New(tranporters), opts...)
+		output.starter = rtl28xxx.NewFile(cfg.FixturesFilename, processor, opts...)
 	} else {
 		rtl28xxx.InitTables()
 
@@ -61,7 +66,7 @@ func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 			opts = append(opts, rtl28xxx.WithGain(cfg.Gain))
 		}
 
-		output.starter = rtl28xxx.New(modes.New(tranporters), opts...)
+		output.starter = rtl28xxx.New(processor, opts...)
 	}
 
 	return output, nil

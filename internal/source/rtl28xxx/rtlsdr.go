@@ -3,9 +3,9 @@ package rtl28xxx
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"time"
 	"unsafe"
+
+	localcontext "github.com/landru29/dump1090/internal/source/context"
 
 	"github.com/landru29/dump1090/internal/source"
 )
@@ -18,11 +18,7 @@ import (
 */
 import "C"
 
-var contextMapper map[string]any
-
 func init() {
-	contextMapper = map[string]any{}
-	rand.Seed(time.Now().UnixNano())
 	InitTables()
 }
 
@@ -193,18 +189,10 @@ func (d *Device) ResetBuffer() error {
 	return nil
 }
 
-func newCcontext(ctx context.Context, processor source.Processer) unsafe.Pointer {
-	key := saveContext(context.WithValue(ctx, deviceInContext{}, processor))
-
-	cKey := unsafe.Pointer(C.CString(string(key)))
-
-	return unsafe.Pointer(C.newContext(cKey))
-}
-
 // ReadAsync reads samples from the device asynchronously. This function will block until
 // it is being canceled using rtlsdr_cancel_async()
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	if intErr := C.rtlsdrReadAsync(d.dev, newCcontext(ctx, d.processor), C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
+	if intErr := C.rtlsdrReadAsync(d.dev, localcontext.New(ctx, d.processor).Ccontext, C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
 	}
 
@@ -221,37 +209,10 @@ func processRaw(ctx context.Context, data []byte, cContext unsafe.Pointer) {
 
 //export goRtlsrdData
 func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
-	cContext := (*C.context)(unsafe.Pointer(c_ctx))
-	ptr := (*C.char)(cContext.goContext)
-
-	ctx := getContext(C.GoString(ptr))
-	processor := ctx.Value(deviceInContext{}).(source.Processer)
+	ctx := localcontext.ContextFromPtr(unsafe.Pointer(c_ctx))
+	processor := localcontext.Processor(ctx)
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(len))
 
 	processor.Process(mySlice)
-}
-
-type deviceInContext struct{}
-
-func saveContext(ctx context.Context) string {
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, 10)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-
-	key := string(b)
-
-	contextMapper[key] = ctx
-
-	return key
-}
-
-func getContext(key string) context.Context {
-	return contextMapper[key].(context.Context)
-}
-
-func disposeContext(key string) {
-	delete(contextMapper, key)
 }

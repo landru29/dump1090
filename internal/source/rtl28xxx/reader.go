@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/landru29/dump1090/internal/source"
+	localcontext "github.com/landru29/dump1090/internal/source/context"
 )
 
 type Reader struct {
@@ -23,7 +24,11 @@ func NewReader(rd io.Reader, processor source.Processer) *Reader {
 
 // Start implements the source.Starter interface.
 func (r *Reader) Start(ctx context.Context) error {
-	cContext := newCcontext(ctx, r.processor)
+	cContext := localcontext.New(ctx, r.processor)
+
+	defer func() {
+		localcontext.DisposeContext(cContext.Key)
+	}()
 
 	for {
 		data := make([]byte, 1024)
@@ -36,6 +41,7 @@ func (r *Reader) Start(ctx context.Context) error {
 			return err
 		}
 
-		processRaw(ctx, data[:cnt], cContext)
+		processRaw(ctx, data[:cnt], cContext.Ccontext)
 	}
+
 }

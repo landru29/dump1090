@@ -35,9 +35,6 @@ func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
 
 	var processor source.Processer = modes.New(tranporters)
 
-	// TODO: to remove
-	processor = source.EmptyProcessor{}
-
 	if cfg.FixturesFilename != "" {
 		opts := []rtl28xxx.FileConfigurator{}
 		if cfg.FixtureLoop {

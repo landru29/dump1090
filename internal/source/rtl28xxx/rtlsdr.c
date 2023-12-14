@@ -6,7 +6,8 @@
 #include "constant.h"
 #include "../context/context.h"
 
-#define RAW 1
+#define RAW 0
+#define DEBUG 0
 
 
 int messageLengthBit[25];
@@ -14,11 +15,13 @@ uint16_t magnitude[129*129];
 
 
 void printValue(uint16_t val) {
-    printf("[");
-    for(int l = 0; l<val/512; l++) {
-        printf("=");
+    if (DEBUG) {
+        printf("[");
+        for(int l = 0; l<val/512; l++) {
+            printf("=");
+        }
+        printf(">\n");
     }
-    printf(">\n");
 }
 
 void printRawValue(uint16_t val) {
@@ -34,7 +37,7 @@ uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength
     uint16_t* magnitudeBuffer = (uint16_t*)malloc(magnitudeBufferLengthByte);
 
     if ((currentCtx->remainingMagnitudeLengthByte>0) && (currentCtx->remainingMagnitudeData != 0)) {
-        if (!RAW) {
+        if ((!RAW) && (DEBUG)) {
             printf("copying %d bytes\n",currentCtx->remainingMagnitudeLengthByte);
         }
         memcpy(magnitudeBuffer, currentCtx->remainingMagnitudeData, currentCtx->remainingMagnitudeLengthByte);
@@ -86,7 +89,7 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
     for(int idx = 0; idx<magnitudeCount - MAGNITUDE_LONG_MSG_SIZE; idx++)  {
         if (RAW) {
             printRawValue(magnitudeBuffer[idx]);
-        } else {
+        } else if (DEBUG) {
             printf("[foo] magnitude %04x  ", magnitudeBuffer[idx]);
             printValue(magnitudeBuffer[idx]);
         }
@@ -161,18 +164,14 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
             continue;
         }
 
-        if (!RAW) {
+        if ((!RAW) && (DEBUG)) {
             printf("[foo] _____________________________________________________________________________________________ good preambule ________________________________________________________________________________________\n");
-        }
-
-        for(int k=1; k<16; k++) {
-            if (!RAW) {
+  
+            for(int k=1; k<16; k++) {
                 printf("[foo] magnitude %04x  ", magnitudeBuffer[idx+k]);
                 printValue(magnitudeBuffer[idx+k]);
             }
-        }
 
-        if (!RAW) {
             printf("\n\n");
         }
 
@@ -200,15 +199,19 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
             message[byteIndex] |= bit << bitIndex;
         }
 
-        goRtlsrdData(message, messageLength / 8, ctx);
-    }
+        // jump over the message
+        if (!RAW) {
+            goRtlsrdData(message, messageLength / 8, ctx);
 
-    
+            // jump over the message
+            idx += startOfMessage + messageLength *2;
+        }
+    }
 
     // Copy remaining data in the context.
     if (currentCtx->remainingMagnitudeData != 0) {
         currentCtx->remainingMagnitudeLengthByte = MAGNITUDE_LONG_MSG_BYTE_SIZE;
-        if (!RAW) {
+        if ((!RAW) && (DEBUG)) {
             printf("Copying data from %ld, size %d\n", (magnitudeCount - MAGNITUDE_LONG_MSG_SIZE) * sizeof(uint16_t), currentCtx->remainingMagnitudeLengthByte);
         }
         memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeCount - MAGNITUDE_LONG_MSG_SIZE], MAGNITUDE_LONG_MSG_BYTE_SIZE);

@@ -10,4 +10,6 @@ func New() *Processor {
 type Processor struct{}
 
 // Process implements the Processer interface.
-func (e Processor) Process(_ []byte) {}
+func (e Processor) Process(_ []byte) error {
+	return nil
+}

@@ -3,6 +3,7 @@ package application
 
 import (
 	"context"
+	"time"
 
 	"github.com/landru29/dump1090/internal/processor"
 	"github.com/landru29/dump1090/internal/processor/decoder"
@@ -19,6 +20,7 @@ type Config struct {
 	Frequency        uint32
 	Gain             float64
 	EnableAGC        bool
+	DatabaseLifetime time.Duration
 }
 
 // App is the main application.
@@ -27,10 +29,10 @@ type App struct {
 }
 
 // New creates a new application.
-func New(cfg *Config, tranporters []transport.Transporter) (*App, error) {
+func New(ctx context.Context, cfg *Config, _ []transport.Transporter) (*App, error) {
 	output := &App{}
 
-	var processor processor.Processer = decoder.New(tranporters)
+	var processor processor.Processer = decoder.New(ctx, cfg.DatabaseLifetime)
 
 	if cfg.FixturesFilename != "" {
 		opts := []rtl28xxx.FileConfigurator{}

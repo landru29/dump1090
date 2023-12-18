@@ -3,5 +3,5 @@ package processor
 
 // Processer is a data processor.
 type Processer interface {
-	Process(data []byte)
+	Process(data []byte) error
 }

@@ -93,7 +93,7 @@ func FromPtr(ptr unsafe.Pointer) context.Context {
 } //nolint: ireturn,nolintlint
 
 // Processor gets the processor from the context.
-func Processor(ctx context.Context) processor.Processer { //nolint: ireturn
+func Processor(ctx context.Context) processor.Processer { //nolint: ireturn,nolintlint
 	return ctx.Value(deviceInContext{}).(processor.Processer) //nolint: forcetypeassert
 }
 

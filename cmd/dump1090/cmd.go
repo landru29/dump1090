@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/landru29/dump1090/internal/application"
 	"github.com/landru29/dump1090/internal/serialize"
@@ -21,8 +22,9 @@ import (
 )
 
 const (
-	defaultNMEAmid   = 226
-	defaultFrequency = 1090000000
+	defaultNMEAmid                        = 226
+	defaultFrequency                      = 1090000000
+	defaultDatabaseLifetime time.Duration = time.Minute
 )
 
 func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
@@ -123,7 +125,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
 				transporters = append(transporters, screen.Transporter{})
 			}
 
-			app, err = application.New(&config, transporters)
+			app, err = application.New(cmd.Context(), &config, transporters)
 
 			return err
 		},
@@ -168,6 +170,14 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
 		"f",
 		defaultFrequency,
 		"frequency in Hz",
+	)
+
+	rootCommand.PersistentFlags().DurationVarP(
+		&config.DatabaseLifetime,
+		"db-lifetime",
+		"",
+		defaultDatabaseLifetime,
+		"lifetime of elements in the AC database",
 	)
 
 	rootCommand.PersistentFlags().Float64VarP(

@@ -19,6 +19,9 @@ const (
 	ErrUnsupportedDownlinkFormat errors.Error = "unsupported downlink format"
 )
 
+// AircraftAddress is the ICAO address of an aircraft.
+type AircraftAddress uint32
+
 // TypeCode is the type of the exetended squitter.
 type TypeCode byte
 
@@ -26,7 +29,7 @@ type TypeCode byte
 type ExtendedSquitter struct {
 	ModeS
 	TransponderCapability byte
-	AircraftAddress       uint32
+	AircraftAddress       AircraftAddress
 	TypeCode              TypeCode
 	Message               []byte
 	Type                  MessageType
@@ -76,9 +79,9 @@ func (e *ExtendedSquitter) Unmarshal(data []byte) error { //nolint: cyclop
 
 	e.TransponderCapability = data[0] & 0x07 //nolint: gomnd
 
-	e.AircraftAddress = (uint32(messageData[0]) << 16) + //nolint: gomnd
+	e.AircraftAddress = AircraftAddress((uint32(messageData[0]) << 16) + //nolint: gomnd
 		(uint32(messageData[1]) << 8) + //nolint: gomnd
-		uint32(messageData[2])
+		uint32(messageData[2]))
 
 	e.TypeCode = TypeCode((messageData[3] & 0xf8) >> 3) //nolint: gomnd
 

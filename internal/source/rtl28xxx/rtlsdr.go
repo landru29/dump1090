@@ -213,5 +213,7 @@ func goRtlsrdData(buf *C.uchar, length C.uint32_t, cCtx *C.void) {
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(length)) //nolint: nlreturn
 
-	processor.Process(mySlice)
+	if err := processor.Process(mySlice); err != nil {
+		fmt.Printf("ERROR: %s\n", err) //nolint: forbidigo
+	}
 }

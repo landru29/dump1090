@@ -49,6 +49,10 @@ issues:
         - goconst
         - forcetypeassert
 
+    - path: internal/processor/.*\.go
+      linters:
+        - misspell
+
     - path: internal/dump/database.go
       linters:
         - gomnd

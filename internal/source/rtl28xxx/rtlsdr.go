@@ -1,15 +1,5 @@
 package rtl28xxx
 
-import (
-	"context"
-	"fmt"
-	"unsafe"
-
-	localcontext "github.com/landru29/dump1090/internal/source/context"
-
-	"github.com/landru29/dump1090/internal/source"
-)
-
 /*
   #cgo LDFLAGS: -lrtlsdr -lm
   #include "rtlsdr.h"
@@ -18,14 +8,23 @@ import (
 */
 import "C"
 
-func init() {
+import (
+	"context"
+	"fmt"
+	"unsafe"
+
+	"github.com/landru29/dump1090/internal/processor"
+	localcontext "github.com/landru29/dump1090/internal/source/context"
+)
+
+func init() { //nolint: gochecknoinits
 	InitTables()
 }
 
 // Device is a RTL-SDR device.
 type Device struct {
 	dev       *C.rtlsdr_dev_t
-	processor source.Processer
+	processor processor.Processer
 }
 
 // InitTables generates tables for data extract.
@@ -40,9 +39,9 @@ func DeviceCount() uint32 {
 
 // DeviceUsbStrings gets USB device strings.
 func DeviceUsbStrings(index uint32) (string, string, string, error) {
-	serial := (*C.char)(C.malloc(256))
-	manufact := (*C.char)(C.malloc(256))
-	product := (*C.char)(C.malloc(256))
+	serial := (*C.char)(C.malloc(256))   //nolint: gomnd
+	manufact := (*C.char)(C.malloc(256)) //nolint: gomnd
+	product := (*C.char)(C.malloc(256))  //nolint: gomnd
 
 	defer func() {
 		C.free(unsafe.Pointer(serial))
@@ -58,13 +57,13 @@ func DeviceUsbStrings(index uint32) (string, string, string, error) {
 }
 
 // OpenDevice opens the device.
-func OpenDevice(index uint32, processor source.Processer) (*Device, error) {
+func OpenDevice(index uint32, processor processor.Processer) (*Device, error) {
 	output := Device{
-		//dev:       &C.rtlsdr_dev_t{},
+		// dev:       &C.rtlsdr_dev_t{},
 		processor: processor,
 	}
 
-	if intErr := C.rtlsdr_open(&output.dev, C.uint32_t(index)); intErr != 0 {
+	if intErr := C.rtlsdr_open(&output.dev, C.uint32_t(index)); intErr != 0 { //nolint: gocritic,nlreturn
 		return nil, fmt.Errorf("RtlsdrOpen: %d", intErr)
 	}
 
@@ -73,7 +72,7 @@ func OpenDevice(index uint32, processor source.Processer) (*Device, error) {
 
 // Close closes the device.
 func (d *Device) Close() error {
-	if intErr := C.rtlsdr_close(d.dev); intErr != 0 {
+	if intErr := C.rtlsdr_close(d.dev); intErr != 0 { //nolint: nlreturn
 		return fmt.Errorf("RtlsdrClose: %d", intErr)
 	}
 
@@ -85,7 +84,7 @@ func (d *Device) Close() error {
 func (d *Device) SetTunerGainMode(manual bool) error {
 	if intErr := C.rtlsdr_set_tuner_gain_mode(
 		d.dev,
-		map[bool]C.int{
+		map[bool]C.int{ //nolint: nlreturn
 			true:  1,
 			false: 0,
 		}[manual],
@@ -101,16 +100,16 @@ func (d *Device) SetTunerGainMode(manual bool) error {
 // NOTE: The gains argument must be preallocated by the caller. If NULL is
 // being given instead, the number of available gain values will be returned.
 func (d *Device) TunerGains() ([]int, error) {
-	gains := (*C.int)(C.malloc(100 * C.sizeof_int))
+	gains := (*C.int)(C.malloc(100 * C.sizeof_int)) //nolint: gomnd
 
-	size := C.rtlsdr_get_tuner_gains(d.dev, gains)
+	size := C.rtlsdr_get_tuner_gains(d.dev, gains) //nolint: nlreturn
 	if size < 0 {
 		return nil, fmt.Errorf("RtlsdrGetTunerGains: %d", size)
 	}
 
 	castedGains := (*[100]C.int)(unsafe.Pointer(gains))
 
-	outGains := make([]int, 100)
+	outGains := make([]int, 100) //nolint: gomnd
 	for idx := range outGains {
 		outGains[idx] = int(castedGains[idx])
 	}
@@ -124,7 +123,7 @@ func (d *Device) TunerGains() ([]int, error) {
 // Valid gain values (in tenths of a dB) for the E4000 tuner:
 // -10, 15, 40, 65, 90, 115, 140, 165, 190, 215, 240, 290, 340, 420, 430, 450, 470, 490
 func (d *Device) SetTunerGain(gain float64) error {
-	if intErr := C.rtlsdr_set_tuner_gain(d.dev, C.int(gain*10)); intErr != 0 {
+	if intErr := C.rtlsdr_set_tuner_gain(d.dev, C.int(gain*10)); intErr != 0 { //nolint: gomnd,nlreturn
 		return fmt.Errorf("RtlsdrSetTunerGain: %d", intErr)
 	}
 
@@ -133,7 +132,7 @@ func (d *Device) SetTunerGain(gain float64) error {
 
 // SetFreqCorrection sets the frequency correction value for the device.
 func (d *Device) SetFreqCorrection(partsPerMillion int) error {
-	if intErr := C.rtlsdr_set_freq_correction(d.dev, C.int(partsPerMillion)); intErr != 0 {
+	if intErr := C.rtlsdr_set_freq_correction(d.dev, C.int(partsPerMillion)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
 		return fmt.Errorf("RtlsdrSetFreqCorrection: %d", intErr)
 	}
 
@@ -144,7 +143,7 @@ func (d *Device) SetFreqCorrection(partsPerMillion int) error {
 func (d *Device) SetAgcMode(on bool) error {
 	if intErr := C.rtlsdr_set_agc_mode(
 		d.dev,
-		map[bool]C.int{
+		map[bool]C.int{ //nolint: nlreturn
 			true:  1,
 			false: 0,
 		}[on],
@@ -157,7 +156,7 @@ func (d *Device) SetAgcMode(on bool) error {
 
 // SetCenterFreq ...
 func (d *Device) SetCenterFreq(freq uint32) error {
-	if intErr := C.rtlsdr_set_center_freq(d.dev, C.uint32_t(freq)); intErr != 0 {
+	if intErr := C.rtlsdr_set_center_freq(d.dev, C.uint32_t(freq)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
 		return fmt.Errorf("RtlsdrSetCenterFreq: %d", intErr)
 	}
 
@@ -173,7 +172,7 @@ func (d *Device) SetCenterFreq(freq uint32) error {
 //	900001 - 3200000 Hz
 //	sample loss is to be expected for rates > 2400000
 func (d *Device) SetSampleRate(rate uint32) error {
-	if intErr := C.rtlsdr_set_sample_rate(d.dev, C.uint32_t(rate)); intErr != 0 {
+	if intErr := C.rtlsdr_set_sample_rate(d.dev, C.uint32_t(rate)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
 		return fmt.Errorf("RtlsdrSetSampleRate: %d", intErr)
 	}
 
@@ -182,7 +181,7 @@ func (d *Device) SetSampleRate(rate uint32) error {
 
 // ResetBuffer ...
 func (d *Device) ResetBuffer() error {
-	if intErr := C.rtlsdr_reset_buffer(d.dev); intErr != 0 {
+	if intErr := C.rtlsdr_reset_buffer(d.dev); intErr != 0 { //nolint: nlreturn
 		return fmt.Errorf("RtlsdrResetBuffer: %d", intErr)
 	}
 
@@ -192,14 +191,14 @@ func (d *Device) ResetBuffer() error {
 // ReadAsync reads samples from the device asynchronously. This function will block until
 // it is being canceled using rtlsdr_cancel_async()
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	if intErr := C.rtlsdrReadAsync(d.dev, localcontext.New(ctx, d.processor).Ccontext, C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 {
+	if intErr := C.rtlsdrReadAsync(d.dev, localcontext.New(ctx, d.processor).Ccontext, C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
 	}
 
 	return nil
 }
 
-func processRaw(ctx context.Context, data []byte, cContext unsafe.Pointer) {
+func processRaw(data []byte, cContext unsafe.Pointer) {
 	cstr := (*C.uchar)(unsafe.Pointer(C.CString(string(data))))
 
 	C.rtlsdrProcessRaw(cstr, C.uint(len(data)), cContext)
@@ -208,11 +207,11 @@ func processRaw(ctx context.Context, data []byte, cContext unsafe.Pointer) {
 }
 
 //export goRtlsrdData
-func goRtlsrdData(buf *C.uchar, len C.uint32_t, c_ctx *C.void) {
-	ctx := localcontext.ContextFromPtr(unsafe.Pointer(c_ctx))
+func goRtlsrdData(buf *C.uchar, length C.uint32_t, cCtx *C.void) {
+	ctx := localcontext.FromPtr(unsafe.Pointer(cCtx))
 	processor := localcontext.Processor(ctx)
 
-	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(len))
+	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(length)) //nolint: nlreturn
 
 	processor.Process(mySlice)
 }

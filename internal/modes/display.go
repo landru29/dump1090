@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) {
+func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) { //nolint: unused
 	line := bytes.NewBuffer(nil)
 
 	switch data := dataByte.(type) {
@@ -28,10 +28,10 @@ func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) {
 	fmt.Fprintf(output, "%s\n", segmentString(strings.Repeat(" ", leadingSpaces)+timStringSize(line.String(), size)))
 }
 
-func segmentString(str string) string {
+func segmentString(str string) string { //nolint: unused
 	output := bytes.NewBuffer(nil)
 	for idx, char := range str {
-		if idx != 0 && (idx%8) == 0 {
+		if idx != 0 && (idx%8) == 0 { //nolint: gomnd
 			output.WriteString(" ")
 		}
 
@@ -41,7 +41,7 @@ func segmentString(str string) string {
 	return output.String()
 }
 
-func timStringSize(str string, size int) string {
+func timStringSize(str string, size int) string { //nolint: unused
 	if size < 0 {
 		return str
 	}
@@ -53,12 +53,13 @@ func timStringSize(str string, size int) string {
 	return str[len(str)-size:]
 }
 
-func trimStringZero(str string) string {
+func trimStringZero(str string) string { //nolint: unused
 	output := bytes.NewBuffer(nil)
 	leading := true
 	for _, char := range str {
 		if leading && char == '0' {
 			output.WriteString(" ")
+
 			continue
 		}
 

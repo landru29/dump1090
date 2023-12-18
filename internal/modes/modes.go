@@ -35,18 +35,20 @@ type ModeS struct {
 	Raw                []byte
 }
 
+// Unmarshal is the mode-S unmarshaler.
 func (m *ModeS) Unmarshal(data []byte) error {
-	if len(data) < 4 {
+	if len(data) < 4 { //nolint: gomnd
 		return ErrWrongMessageSize
 	}
 
 	length := len(data)
 
-	m.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3)
+	m.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3) //nolint: gomnd
 
 	m.Raw = data
 
-	m.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + uint32(data[length-1])
+	m.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + //nolint: gomnd
+		uint32(data[length-1])
 
 	return nil
 }

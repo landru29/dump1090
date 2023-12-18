@@ -1,4 +1,5 @@
-package modes
+// Package decoder is the default processor.
+package decoder
 
 import (
 	"encoding/hex"
@@ -21,5 +22,5 @@ func New(transporters []transport.Transporter) *Process {
 
 // Process implements source.Processor the interface.
 func (p Process) Process(data []byte) {
-	fmt.Println(hex.EncodeToString(data))
+	fmt.Println(hex.EncodeToString(data)) //nolint: forbidigo
 }

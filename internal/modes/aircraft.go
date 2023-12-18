@@ -2,10 +2,12 @@ package modes
 
 import "github.com/landru29/dump1090/internal/source"
 
+// Aircraft is an aircraft.
 type Aircraft struct {
 	Identification *Identification
 }
 
+// Unmarshal is the mode-s unmarshaler.
 func (a *Aircraft) Unmarshal(data []byte) error {
 	extendedSquitter := &ExtendedSquitter{}
 
@@ -14,7 +16,7 @@ func (a *Aircraft) Unmarshal(data []byte) error {
 		return err
 	}
 
-	switch extendedSquitter.Type {
+	switch extendedSquitter.Type { //nolint: gocritic, exhaustive
 	case MessageTypeAircraftIdentification:
 		id, err := extendedSquitter.Identification()
 		if err != nil {
@@ -27,6 +29,7 @@ func (a *Aircraft) Unmarshal(data []byte) error {
 	return nil
 }
 
+// ToSource ...
 func (a Aircraft) ToSource() source.Aircraft {
 	return source.Aircraft{}
 }

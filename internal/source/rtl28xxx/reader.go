@@ -5,17 +5,19 @@ import (
 	"errors"
 	"io"
 
-	"github.com/landru29/dump1090/internal/source"
+	"github.com/landru29/dump1090/internal/processor"
 	localcontext "github.com/landru29/dump1090/internal/source/context"
 )
 
+// Reader is device reader.
 type Reader struct {
 	reader io.Reader
 
-	processor source.Processer
+	processor processor.Processer
 }
 
-func NewReader(rd io.Reader, processor source.Processer) *Reader {
+// NewReader creates a new device reader.
+func NewReader(rd io.Reader, processor processor.Processer) *Reader {
 	return &Reader{
 		reader:    rd,
 		processor: processor,
@@ -31,7 +33,7 @@ func (r *Reader) Start(ctx context.Context) error {
 	}()
 
 	for {
-		data := make([]byte, 1024)
+		data := make([]byte, 1024) //nolint: gomnd
 		cnt, err := r.reader.Read(data)
 		if errors.Is(err, io.EOF) {
 			return nil
@@ -41,7 +43,6 @@ func (r *Reader) Start(ctx context.Context) error {
 			return err
 		}
 
-		processRaw(ctx, data[:cnt], cContext.Ccontext)
+		processRaw(data[:cnt], cContext.Ccontext)
 	}
-
 }

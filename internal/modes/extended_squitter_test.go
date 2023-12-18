@@ -20,7 +20,7 @@ func TestUnmarshal(t *testing.T) {
 
 		msg := modes.ExtendedSquitter{}
 
-		assert.NoError(t, msg.Unmarshal(dataByte))
+		require.NoError(t, msg.Unmarshal(dataByte))
 
 		assert.Equal(t, modes.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
 		assert.Equal(t, byte(5), msg.TransponderCapability)
@@ -51,7 +51,7 @@ func TestUnmarshal(t *testing.T) {
 
 				msg := modes.ExtendedSquitter{}
 
-				assert.NoError(t, msg.Unmarshal(dataByte))
+				require.NoError(t, msg.Unmarshal(dataByte))
 			})
 		}
 	})
@@ -71,7 +71,7 @@ func TestUnmarshal(t *testing.T) {
 
 				modeS := &modes.ModeS{}
 
-				assert.NoError(t, modeS.Unmarshal(dataByte))
+				require.NoError(t, modeS.Unmarshal(dataByte))
 			})
 		}
 	})

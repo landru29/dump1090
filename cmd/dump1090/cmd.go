@@ -128,7 +128,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
 			return err
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := app.Start(cmd.Context(), loop); err != nil {
+			if err := app.Start(cmd.Context()); err != nil {
 				return err
 			}
 

@@ -1,21 +1,22 @@
-// Package rtlsdr is the RTL28xxx data source.
+// Package rtl28xxx is the RTL28xxx data source.
 package rtl28xxx
 
 import (
 	"context"
 
 	"github.com/landru29/dump1090/internal/errors"
-	"github.com/landru29/dump1090/internal/source"
+	"github.com/landru29/dump1090/internal/processor"
 )
 
 const (
+	// ErrNoDeviceFound is when no device is found.
 	ErrNoDeviceFound errors.Error = "no device found"
 
 	modeSfrequency = 1090000000
 	sampleRate     = 2000000
 
 	asyncBufNumber = 12
-	dataLen        = (16 * 16384) /* 256k */
+	dataLen        = (16 * 16384) /* 256k */ //nolint: gomnd
 )
 
 // Configurator is the Source configurator.
@@ -28,12 +29,12 @@ type Source struct {
 	gain        float64
 	enableAGC   bool
 
-	processer source.Processer
+	processor processor.Processer
 	dev       *Device
 }
 
 // New creates a new data source process.
-func New(processer source.Processer, opts ...Configurator) *Source {
+func New(opts ...Configurator) *Source {
 	output := &Source{
 		deviceIndex: 0,
 		frequency:   modeSfrequency,
@@ -61,7 +62,7 @@ func (s *Source) Start(ctx context.Context) error {
 		deviceIndex = s.deviceIndex
 	}
 
-	device, err := OpenDevice(uint32(deviceIndex), s.processer)
+	device, err := OpenDevice(deviceIndex, s.processor)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func WithDeviceIndex(index int) Configurator {
 	}
 }
 
-// WithFrequencyv configures the frequency.
+// WithFrequency configures the frequency.
 func WithFrequency(frequency uint32) Configurator {
 	return func(s *Source) {
 		s.frequency = frequency

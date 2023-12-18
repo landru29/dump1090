@@ -58,7 +58,7 @@ func TestAirbornPosition(t *testing.T) {
 
 			msg := modes.ExtendedSquitter{}
 
-			assert.NoError(t, msg.Unmarshal(dataByte))
+			require.NoError(t, msg.Unmarshal(dataByte))
 
 			airbornePosition, err := msg.AirbornePosition()
 			require.NoError(t, err)

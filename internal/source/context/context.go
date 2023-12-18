@@ -1,4 +1,11 @@
-package rtl28xxx
+// Package context is the C context.
+package context
+
+/*
+  #include "context.h"
+  #include <malloc.h>
+*/
+import "C"
 
 import (
 	"context"
@@ -7,23 +14,16 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/landru29/dump1090/internal/source"
+	"github.com/landru29/dump1090/internal/processor"
 )
-
-/*
-  #include "context.h"
-  #include <malloc.h>
-
-*/
-import "C"
 
 var (
-	contextMapper map[string]any
-	random        *rand.Rand
-	mutex         sync.Mutex
+	contextMapper map[string]any //nolint: gochecknoglobals
+	random        *rand.Rand     //nolint: gochecknoglobals
+	mutex         sync.Mutex     //nolint: gochecknoglobals
 )
 
-func init() {
+func init() { //nolint: gochecknoinits
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -32,14 +32,17 @@ func init() {
 	random = rand.New(source)
 }
 
+// Context is the C context.
 type Context struct {
-	Context  context.Context
+	Context  context.Context //nolint: containedctx
 	Key      string
 	Ccontext unsafe.Pointer
 }
 
+const randomLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 // New creates a C Context with a processor
-func New(ctx context.Context, processor source.Processer) *Context {
+func New(ctx context.Context, processor processor.Processer) *Context { //nolint: contextcheck
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -50,9 +53,9 @@ func New(ctx context.Context, processor source.Processer) *Context {
 
 	output.Key = saveContext(output)
 
-	cKey := unsafe.Pointer(C.CString(string(output.Key)))
+	cKey := unsafe.Pointer(C.CString(output.Key))
 
-	output.Ccontext = unsafe.Pointer(C.newContext(cKey))
+	output.Ccontext = unsafe.Pointer(C.newContext(cKey)) //nolint: nlreturn
 
 	return output
 }
@@ -63,8 +66,8 @@ func saveContext(ctx context.Context) string {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, 10)
+	letterRunes := []rune(randomLetters)
+	b := make([]rune, 10) //nolint: gomnd
 	for i := range b {
 		b[i] = letterRunes[random.Intn(len(letterRunes))]
 	}
@@ -76,22 +79,22 @@ func saveContext(ctx context.Context) string {
 	return key
 }
 
-// ContextFromKey gets a global context.
-func ContextFromKey(key string) context.Context {
-	return contextMapper[key].(context.Context)
+// FromKey gets a global context.
+func FromKey(key string) context.Context {
+	return contextMapper[key].(context.Context) //nolint: forcetypeassert
 }
 
-// ContextFromPtr gets a context from a key pointer.
-func ContextFromPtr(ptr unsafe.Pointer) context.Context {
+// FromPtr gets a context from a key pointer.
+func FromPtr(ptr unsafe.Pointer) context.Context {
 	cContext := (*C.context)(ptr)
 	contextPointer := (*C.char)(cContext.goContext)
 
-	return ContextFromKey(C.GoString(contextPointer))
-}
+	return FromKey(C.GoString(contextPointer))
+} //nolint: ireturn,nolintlint
 
 // Processor gets the processor from the context.
-func Processor(ctx context.Context) source.Processer {
-	return ctx.Value(deviceInContext{}).(source.Processer)
+func Processor(ctx context.Context) processor.Processer { //nolint: ireturn
+	return ctx.Value(deviceInContext{}).(processor.Processer) //nolint: forcetypeassert
 }
 
 // DisposeContext Garbage collect the context.
@@ -100,7 +103,7 @@ func DisposeContext(key string) {
 }
 
 // Deadline implements the context.Context interface.
-func (c *Context) Deadline() (deadline time.Time, ok bool) {
+func (c *Context) Deadline() (time.Time, bool) {
 	return c.Context.Deadline()
 }
 

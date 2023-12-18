@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/landru29/dump1090/internal/source"
+	"github.com/landru29/dump1090/internal/processor"
 )
 
 // SourceFile is the data file source.
@@ -14,14 +14,14 @@ type SourceFile struct {
 	filename string
 	loop     bool
 
-	processor source.Processer
+	processor processor.Processer
 }
 
-// Configurator is the Source configurator.
+// FileConfigurator is the Source configurator.
 type FileConfigurator func(*SourceFile)
 
-// New creates a new data source process.
-func NewFile(filename string, processor source.Processer, opts ...FileConfigurator) *SourceFile {
+// NewFile creates a new data source process.
+func NewFile(filename string, processor processor.Processer, opts ...FileConfigurator) *SourceFile {
 	output := &SourceFile{
 		filename:  filename,
 		processor: processor,
@@ -58,7 +58,7 @@ func (s *SourceFile) Start(ctx context.Context) error {
 
 	err := s.start(ctx)
 
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 
 	return err
 }

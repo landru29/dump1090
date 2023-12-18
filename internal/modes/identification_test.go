@@ -16,7 +16,7 @@ func TestIdentification(t *testing.T) {
 
 		msg := modes.ExtendedSquitter{}
 
-		assert.NoError(t, msg.Unmarshal(dataByte))
+		require.NoError(t, msg.Unmarshal(dataByte))
 
 		ident, err := msg.Identification()
 		require.NoError(t, err)

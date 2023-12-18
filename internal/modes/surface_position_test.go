@@ -54,7 +54,7 @@ func TestSurfacePosition(t *testing.T) {
 
 			msg := modes.ExtendedSquitter{}
 
-			assert.NoError(t, msg.Unmarshal(dataByte))
+			require.NoError(t, msg.Unmarshal(dataByte))
 
 			surfacePosition, err := msg.SurfacePosition()
 			require.NoError(t, err)

@@ -2,6 +2,15 @@ package modes
 
 import "time"
 
+//       ┏━━━━━━━┓
+//       ┃ 8-18  ┃
+//       ┃ 20-23 ┃
+//       ┣━━━━━━━╇━━━━┯━━━━━┯━━━━━┯━━━┯━━━┯━━━━━━━━━┯━━━━━━━━━┓
+//       ┃  TC   | SS | SAF | ALT | T | F | LAT-CPR | LON-CPR ┃
+//       ┠┈┈┈┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┼┈┈┈┼┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┨
+//       ┃   5   |  2 |  1  |  12 | 1 | 1 |    17   |   17    ┃
+//       ┗━━━━━━━┷━━━━┷━━━━━┷━━━━━┷━━━┷━━━┷━━━━━━━━━┷━━━━━━━━━┛
+
 // SurveillanceStatus is the surveillance status.
 type SurveillanceStatus byte
 

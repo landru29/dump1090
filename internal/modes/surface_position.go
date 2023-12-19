@@ -2,6 +2,14 @@ package modes
 
 import "time"
 
+//       ┏━━━━━┓
+//       ┃ 4-9 ┃
+//       ┣━━━━━╇━━━━━┯━━━┯━━━━━┯━━━┯━━━┯━━━━━━━━━┯━━━━━━━━━┓
+//       ┃ TC  | MOV | S | TRK | T | F | LAT-CPR | LON-CPR ┃
+//       ┠┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┼┈┈┈┈┈┼┈┈┈┼┈┈┈┼┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┨
+//       ┃ 5   |  7  | 1 |  7  | 1 | 1 |    17   |   17    ┃
+//       ┗━━━━━┷━━━━━┷━━━┷━━━━━┷━━━┷━━━┷━━━━━━━━━┷━━━━━━━━━┛
+
 // SurfacePosition is the surface position of the aircraft.
 type SurfacePosition struct {
 	GroundTrack      float64

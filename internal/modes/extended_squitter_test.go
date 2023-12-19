@@ -24,7 +24,7 @@ func TestUnmarshal(t *testing.T) {
 
 		assert.Equal(t, modes.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
 		assert.Equal(t, byte(5), msg.TransponderCapability)
-		assert.Equal(t, uint32(4735190), msg.AircraftAddress)
+		assert.Equal(t, modes.AircraftAddress(4735190), msg.AircraftAddress)
 		assert.Equal(t, modes.TypeCode(0x04), msg.TypeCode)
 		assert.Equal(t, uint32(0x576098), msg.ModeS.ParityInterrogator)
 		assert.Len(t, msg.Message, 56/8)

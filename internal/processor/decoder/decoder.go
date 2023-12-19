@@ -11,13 +11,16 @@ import (
 
 // Process is the data processor.
 type Process struct {
-	ExtendedQuitters *database.Storage[modes.AircraftAddress, modes.ExtendedSquitter]
+	ExtendedSquitters *database.Storage[modes.AircraftAddress, modes.ExtendedSquitter]
 }
 
 // New creates a data processor.
 func New(ctx context.Context, dbLifeTime time.Duration) *Process {
 	return &Process{
-		ExtendedQuitters: database.New[modes.AircraftAddress, modes.ExtendedSquitter](ctx, dbLifeTime),
+		ExtendedSquitters: database.New[modes.AircraftAddress, modes.ExtendedSquitter](
+			ctx,
+			database.WithLifetime[modes.AircraftAddress, modes.ExtendedSquitter](dbLifeTime),
+		),
 	}
 }
 
@@ -28,7 +31,7 @@ func (p Process) Process(data []byte) error {
 		return err
 	}
 
-	p.ExtendedQuitters.Add(message.AircraftAddress, *message)
+	p.ExtendedSquitters.Add(message.AircraftAddress, *message)
 
 	return nil
 }

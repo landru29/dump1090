@@ -4,7 +4,7 @@ package text
 import (
 	"strings"
 
-	"github.com/landru29/dump1090/internal/dump"
+	"github.com/landru29/dump1090/internal/model"
 )
 
 // Serializer is the text serializer.
@@ -17,18 +17,18 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 	}
 
 	switch aircraft := ac.(type) {
-	case dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{&aircraft})
-	case *dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{aircraft})
-	case []dump.Aircraft:
-		out := make([]*dump.Aircraft, len(aircraft))
+	case model.Aircraft:
+		return s.Serialize([]*model.Aircraft{&aircraft})
+	case *model.Aircraft:
+		return s.Serialize([]*model.Aircraft{aircraft})
+	case []model.Aircraft:
+		out := make([]*model.Aircraft, len(aircraft))
 		for idx := range aircraft {
 			out[idx] = &aircraft[idx]
 		}
 
 		return s.Serialize(out)
-	case []*dump.Aircraft:
+	case []*model.Aircraft:
 		out := make([]string, len(aircraft))
 		for idx, plane := range aircraft {
 			out[idx] = plane.String()

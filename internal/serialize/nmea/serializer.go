@@ -3,7 +3,7 @@ package nmea
 import (
 	"bytes"
 
-	"github.com/landru29/dump1090/internal/dump"
+	"github.com/landru29/dump1090/internal/model"
 )
 
 const (
@@ -41,25 +41,25 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 	}
 
 	switch aircraft := ac.(type) {
-	case dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{&aircraft})
-	case *dump.Aircraft:
-		return s.Serialize([]*dump.Aircraft{aircraft})
-	case []dump.Aircraft:
-		out := make([]*dump.Aircraft, len(aircraft))
+	case model.Aircraft:
+		return s.Serialize([]*model.Aircraft{&aircraft})
+	case *model.Aircraft:
+		return s.Serialize([]*model.Aircraft{aircraft})
+	case []model.Aircraft:
+		out := make([]*model.Aircraft, len(aircraft))
 		for idx := range aircraft {
 			out[idx] = &aircraft[idx]
 		}
 
 		return s.Serialize(out)
-	case []*dump.Aircraft:
+	case []*model.Aircraft:
 		output := [][]byte{}
 		for _, ac := range aircraft {
-			if ac.Lon != 0 || ac.Lat != 0 {
+			if ac.Position != nil {
 				fields, err := payload{
 					MMSI:             s.MMSI(ac.Addr),
-					Longitude:        ac.Lon,
-					Latitude:         ac.Lat,
+					Longitude:        ac.Position.Longitude,
+					Latitude:         ac.Position.Latitude,
 					SpeedOverGround:  float64(ac.Speed) / speedOverGroundScale,
 					PositionAccuracy: true,
 					CourseOverGround: float64(ac.Track),

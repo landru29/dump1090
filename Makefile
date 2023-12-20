@@ -1,5 +1,14 @@
 .PHONY: build-dump1090 build-driver clean
 
+lint:
+	golangci-lint run ./...
+
+test:
+	gotest ./...
+
+gen:
+	go generate ./...
+
 build-dump1090: build-dump1090.amd64 build-dump1090.arm64
 
 build-driver: build-driver.amd64 build-driver.arm64

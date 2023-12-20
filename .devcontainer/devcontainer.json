@@ -1,0 +1,42 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go
+{
+	"name": "dump1090",
+	"build": {
+        "dockerfile": ".devcontainer/Dockerfile"
+    },
+
+	"workspaceMount": "source=${localWorkspaceFolder},target=/app/dump1090,type=bind",
+	"workspaceFolder": "/app/dump1090",
+
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"go.toolsManagement.checkForUpdates": "local",
+				"go.useLanguageServer": true,
+				"go.gopath": "/go",
+				"go.lintTool": "golangci-lint",
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/usr/bin/zsh",
+						"args": ["-l"]
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"files.associations": {
+					"array": "c",
+					"string": "c",
+					"string_view": "c"
+				}
+			},
+
+			"extensions": [
+				"golang.Go"
+			]
+		}
+	},
+	"features": {
+		"git": "os-provided"
+	}
+}
+

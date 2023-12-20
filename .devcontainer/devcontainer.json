@@ -3,11 +3,12 @@
 {
 	"name": "dump1090",
 	"build": {
-        "dockerfile": ".devcontainer/Dockerfile"
+        "dockerfile": "Dockerfile"
     },
 
 	"workspaceMount": "source=${localWorkspaceFolder},target=/app/dump1090,type=bind",
 	"workspaceFolder": "/app/dump1090",
+	"containerUser": "vscode",
 
 	"customizations": {
 		"vscode": {
@@ -37,6 +38,7 @@
 	},
 	"features": {
 		"git": "os-provided"
-	}
+	},
+	"postCreateCommand": "/app/dump1090/.devcontainer/post-install.sh"
 }
 

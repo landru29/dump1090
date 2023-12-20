@@ -67,7 +67,7 @@ func (s Serializer) String() string {
 	return "base-station"
 }
 
-func message(aircraft model.Aircraft) string { //nolint: cyclop
+func message(aircraft model.Aircraft) string {
 	alert := map[bool]int{
 		false: 0,
 		true:  -1,

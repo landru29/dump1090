@@ -19,9 +19,9 @@ func TestReader(t *testing.T) {
 
 	mockProcessor := mocks.NewMockProcesser(ctrl)
 
-	mockProcessor.EXPECT().Process(gomock.Any).AnyTimes()
+	mockProcessor.EXPECT().Process(gomock.Any()).AnyTimes()
 
-	file, err := os.Open("../../testdata/modes1.bin")
+	file, err := os.Open("../../../testdata/modes1.bin")
 	require.NoError(t, err)
 
 	defer func(closer io.Closer) {

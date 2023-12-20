@@ -6,7 +6,9 @@ import (
 	"time"
 )
 
-// verticalRate := int64(aircraft.Message.VertRate-1) * 64 * map[bool]int64{true: -1, false: 1}[aircraft.Message.VertRateNegative]
+// verticalRate := int64(aircraft.Message.VertRate-1)
+//               * 64
+//               * map[bool]int64{true: -1, false: 1}[aircraft.Message.VertRateNegative]
 
 // Aircraft is an aircraft description.
 type Aircraft struct {

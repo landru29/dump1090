@@ -34,6 +34,7 @@ func (r *Reader) Start(ctx context.Context) error {
 
 	for {
 		data := make([]byte, 1024) //nolint: gomnd
+
 		cnt, err := r.reader.Read(data)
 		if errors.Is(err, io.EOF) {
 			return nil

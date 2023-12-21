@@ -27,7 +27,7 @@ const (
 	defaultDatabaseLifetime time.Duration = time.Minute
 )
 
-func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop
+func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 	var (
 		app                  *application.App
 		config               application.Config

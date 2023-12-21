@@ -33,6 +33,7 @@ func (e ExtendedSquitter) SurfacePosition() (*SurfacePosition, error) {
 	//   TC    Movement   stat    GndTrack    T Odd         Enc Latitude             Enc Longitude
 
 	encodedMovement := ((e.Message[0] & 0x7) << 4) | ((e.Message[1]) >> 4) //nolint: gomnd
+
 	var speed float64
 
 	switch {

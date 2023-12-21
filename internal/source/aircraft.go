@@ -5,7 +5,7 @@ import "time"
 // Aircraft is an aircraft.
 type Aircraft struct {
 	Addr     uint32    `json:"icao"`     /* ICAO address */
-	HexAddr  string    `json:"icao_hex"` /* Printable ICAO address */
+	HexAddr  string    `json:"icaoHex"`  /* Printable ICAO address */
 	Flight   string    `json:"flight"`   /* Flight number */
 	Altitude int       `json:"altitude"` /* Altitude */
 	Speed    int       `json:"speed"`    /* Velocity computed from EW and NS components. */

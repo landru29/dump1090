@@ -110,6 +110,7 @@ func payloadAddData(dest []uint8, data any, bitPosition uint8, length uint8) (ui
 
 func encodeBinaryPayload(input []uint8) string {
 	str := ""
+
 	for idx, elt := range input {
 		if (elt & 0x3f) > 0x27 {
 			str = str[:idx] + string(elt+56)

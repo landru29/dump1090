@@ -58,6 +58,7 @@ func (s *Storage[K, T]) Clean() {
 
 	for key, list := range s.data {
 		newLst := []Element[T]{}
+
 		for _, elt := range list {
 			if !elt.expired(s.lifetime) {
 				newLst = append(newLst, elt)

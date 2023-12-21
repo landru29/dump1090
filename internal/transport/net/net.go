@@ -9,9 +9,14 @@ import (
 	"strings"
 	"sync"
 
+	localerrors "github.com/landru29/dump1090/internal/errors"
 	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/landru29/dump1090/internal/source"
 	"github.com/pkg/errors"
+)
+
+const (
+	errNoValidFormater localerrors.Error = "no valid formater"
 )
 
 // Transporter is the udp transporter.
@@ -30,7 +35,7 @@ func New(
 	outputLog io.Writer,
 ) (*Transporter, error) {
 	if formater == nil {
-		return nil, fmt.Errorf("no valid formater")
+		return nil, errNoValidFormater
 	}
 
 	if outputLog == nil {
@@ -74,6 +79,7 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 			select {
 			case <-ctx.Done():
 				t.close()
+
 				_ = tcpServer.Close()
 
 				return
@@ -149,7 +155,9 @@ func (t *Transporter) Transport(ac *source.Aircraft) error {
 
 		if err != nil {
 			fmt.Fprintf(t.outWriter, "ERR: %s\n", err)
+
 			hasError = true
+
 			globalErr = errors.Wrap(globalErr, err.Error())
 		}
 	}

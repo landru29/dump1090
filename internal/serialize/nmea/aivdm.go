@@ -77,11 +77,14 @@ func (p payload) Binary() (string, error) { //nolint: funlen,cyclop
 	}
 
 	rot := 128.0
+
 	if p.RateOfTurn != rateNoTurnInfo {
 		rot = 4.733 * math.Sqrt(math.Abs(p.RateOfTurn))
+
 		if p.RateOfTurn < 0 {
 			rot = -rot
 		}
+
 		if rot > 126 {
 			rot = 127
 		}
@@ -96,6 +99,7 @@ func (p payload) Binary() (string, error) { //nolint: funlen,cyclop
 	}
 
 	sog := uint16(math.Abs(p.SpeedOverGround * 10))
+
 	if _, err := payloadAddData(encoded, sog, 50, 10); err != nil {
 		return "", err
 	}
@@ -105,16 +109,19 @@ func (p payload) Binary() (string, error) { //nolint: funlen,cyclop
 	}
 
 	lng := (int64(p.Longitude*600000.0+324000000) % 216000000) - 108000000
+
 	if _, err := payloadAddData(encoded, lng, 61, 28); err != nil {
 		return "", err
 	}
 
 	lat := int64(p.Latitude * 600000.0)
+
 	if _, err := payloadAddData(encoded, lat, 89, 27); err != nil {
 		return "", err
 	}
 
 	cog := uint16(math.Abs(p.CourseOverGround * 10))
+
 	if _, err := payloadAddData(encoded, cog, 116, 12); err != nil {
 		return "", err
 	}

@@ -63,6 +63,7 @@ func (s Serializer) Serialize(planes ...any) ([]byte, error) {
 				if err != nil {
 					return nil, err
 				}
+
 				output = append(output, []byte(fields.String()))
 			}
 		case []model.Aircraft:

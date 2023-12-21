@@ -9,7 +9,7 @@ type midAllocation struct {
 // MidList is the list of identifiers.
 var MidList []midAllocation //nolint: gochecknoglobals
 
-func init() { //nolint: funlen,gochecknoinits
+func init() { //nolint: funlen,gochecknoinits,maintidx
 	MidList = []midAllocation{
 		{MID: 201, Loc: "Albania", Code: []string{"AL"}},
 		{MID: 202, Loc: "Andorra", Code: []string{"AD"}},

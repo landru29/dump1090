@@ -12,20 +12,20 @@ import (
 
 // Aircraft is an aircraft description.
 type Aircraft struct {
-	IcaoAddress        ICAOAddr  `json:"icao_address"`
+	IcaoAddress        ICAOAddr  `json:"icaoAddress"`
 	Altitude           int64     `json:"altitude"`
 	Position           *Position `json:"position,omitempty"`
-	Flight             string    `json:"flight"`             /* Flight number */
-	Addr               uint32    `json:"icao"`               /* ICAO address */
-	Speed              int       `json:"speed"`              /* Velocity computed from EW and NS components. */
-	Track              int       `json:"track"`              /* Angle of flight. */
-	Identity           Squawk    `json:"identity"`           /* 13 bits identity (from transponder). */
-	LastUpdate         time.Time `json:"last_update"`        /* Time at which the last packet was received. */
-	LastFlightStatus   int       `json:"last_flight_status"` /* Flight status for DF4,5,20,21 */
-	LastDownlinkFormat int       `json:"downlink_format"`    /* Downlink format # */
+	Flight             string    `json:"flight"`           /* Flight number */
+	Addr               uint32    `json:"icao"`             /* ICAO address */
+	Speed              int       `json:"speed"`            /* Velocity computed from EW and NS components. */
+	Track              int       `json:"track"`            /* Angle of flight. */
+	Identity           Squawk    `json:"identity"`         /* 13 bits identity (from transponder). */
+	LastUpdate         time.Time `json:"lastUpdate"`       /* Time at which the last packet was received. */
+	LastFlightStatus   int       `json:"lastFlightStatus"` /* Flight status for DF4,5,20,21 */
+	LastDownlinkFormat int       `json:"downlinkFormat"`   /* Downlink format # */
 	LastType           int
 	LastSubType        int
-	VerticalRate       int64 `json:"vertical_rate"`
+	VerticalRate       int64 `json:"verticalRate"`
 }
 
 // String implements the Stringer interface.

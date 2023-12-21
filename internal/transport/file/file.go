@@ -46,6 +46,7 @@ func New(ctx context.Context, filename string, serializer serialize.Serializer) 
 
 	go func() {
 		<-ctx.Done()
+
 		_ = file.Close()
 	}()
 

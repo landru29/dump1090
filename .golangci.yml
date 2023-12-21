@@ -12,26 +12,22 @@ linters:
   enable-all: true
   disable:
     - wrapcheck
-    - noctx
     - exhaustivestruct
     - goerr113
-    - scopelint
-    - interfacer
-    - maligned
-    - godox
     - exhaustruct
     - interfacebloat
     - depguard
-    - maintidx
-    - tagliatelle
+    #- tagliatelle
 # Deprecated
+    - scopelint
+    - interfacer
+    - maligned
     - structcheck
     - nosnakecase
     - golint
     - deadcode
     - ifshort
     - varcheck
-    - wsl
 
 issues:
   exclude-use-default: false

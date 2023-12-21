@@ -30,6 +30,7 @@ func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) { 
 
 func segmentString(str string) string { //nolint: unused
 	output := bytes.NewBuffer(nil)
+
 	for idx, char := range str {
 		if idx != 0 && (idx%8) == 0 { //nolint: gomnd
 			output.WriteString(" ")
@@ -55,7 +56,9 @@ func timStringSize(str string, size int) string { //nolint: unused
 
 func trimStringZero(str string) string { //nolint: unused
 	output := bytes.NewBuffer(nil)
+
 	leading := true
+
 	for _, char := range str {
 		if leading && char == '0' {
 			output.WriteString(" ")
@@ -64,6 +67,7 @@ func trimStringZero(str string) string { //nolint: unused
 		}
 
 		leading = false
+
 		output.WriteByte(byte(char))
 	}
 

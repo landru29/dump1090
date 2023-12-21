@@ -67,12 +67,13 @@ func saveContext(ctx context.Context) string {
 	defer mutex.Unlock()
 
 	letterRunes := []rune(randomLetters)
-	b := make([]rune, 10) //nolint: gomnd
-	for i := range b {
-		b[i] = letterRunes[random.Intn(len(letterRunes))]
+	letterByte := make([]rune, 10) //nolint: gomnd
+
+	for i := range letterByte {
+		letterByte[i] = letterRunes[random.Intn(len(letterRunes))]
 	}
 
-	key := string(b)
+	key := string(letterByte)
 
 	contextMapper[key] = ctx
 

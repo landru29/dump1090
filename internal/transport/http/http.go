@@ -47,10 +47,13 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 	}
 
 	router := mux.NewRouter()
+
 	router.HandleFunc(apiPath, output.serveData)
+
 	router.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("window.apiPath='%s'", apiPath)))
 	})
+
 	if apiPath != "/" {
 		router.PathPrefix("/").Handler(http.FileServer(http.FS(subFS)))
 	}
@@ -63,6 +66,7 @@ func New(ctx context.Context, addr string, apiPath string, formaters []serialize
 
 	go func() {
 		fmt.Printf("Serving on %s\n", addr) //nolint: forbidigo
+
 		if err := srv.ListenAndServe(); err != nil {
 			fmt.Printf("ERR: %s", err) //nolint: forbidigo
 		}

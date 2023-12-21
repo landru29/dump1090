@@ -38,7 +38,7 @@ const (
 	radioChannelB radioChannel = "B"
 )
 
-// payload is the VDM / VDO payload
+// payload is the VDM / VDO payload.
 type payload struct {
 	MMSI              uint32            // 8-37 (30)
 	NavigationStatus  navigationStatus  // 38-41 (4)

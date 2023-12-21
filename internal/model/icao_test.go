@@ -10,6 +10,8 @@ import (
 )
 
 func TestMarshalICAO(t *testing.T) {
+	t.Parallel()
+
 	icao := model.ICAOAddr(0xabcdef)
 
 	out, err := json.Marshal(icao)
@@ -19,7 +21,11 @@ func TestMarshalICAO(t *testing.T) {
 }
 
 func TestUnmarshalICAO(t *testing.T) {
+	t.Parallel()
+
 	t.Run("no error", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.ICAOAddr
 
 		err := json.Unmarshal([]byte(`"123456"`), &icao)
@@ -29,6 +35,8 @@ func TestUnmarshalICAO(t *testing.T) {
 	})
 
 	t.Run("empty value", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.ICAOAddr
 
 		err := json.Unmarshal(nil, &icao)
@@ -36,6 +44,8 @@ func TestUnmarshalICAO(t *testing.T) {
 	})
 
 	t.Run("missing quotes", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.ICAOAddr
 
 		err := json.Unmarshal([]byte(`123456`), &icao)

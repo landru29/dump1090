@@ -39,18 +39,18 @@ func New(ctx context.Context, filename string, serializer serialize.Serializer) 
 		return nil, fmt.Errorf("no valid formater")
 	}
 
-	f, err := os.OpenFile(filepath.Clean(filename), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600) //nolint: gomnd
+	file, err := os.OpenFile(filepath.Clean(filename), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600) //nolint: gomnd
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		<-ctx.Done()
-		_ = f.Close()
+		_ = file.Close()
 	}()
 
 	return &Transporter{
 		serializer: serializer,
-		fileDesc:   f,
+		fileDesc:   file,
 	}, nil
 }

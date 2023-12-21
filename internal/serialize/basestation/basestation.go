@@ -12,49 +12,40 @@ import (
 type Serializer struct{}
 
 // Serialize implements the Serialize.Serializer interface.
-func (s Serializer) Serialize(ac any) ([]byte, error) {
-	if ac == nil {
-		return nil, nil
-	}
-
-	switch aircraft := ac.(type) {
-	case model.Aircraft:
-		return s.Serialize([]*model.Aircraft{&aircraft})
-
-	case *model.Aircraft:
-		if aircraft == nil {
-			return nil, nil
-		}
-
-		return []byte(message(*aircraft)), nil
-
-	case []model.Aircraft:
-		output := [][]byte{}
-		for _, ac := range aircraft {
-			data, err := s.Serialize(ac)
+func (s Serializer) Serialize(planes ...any) ([]byte, error) {
+	output := [][]byte{}
+	for _, ac := range planes {
+		switch aircraft := ac.(type) {
+		case model.Aircraft:
+			data, err := s.Serialize(&aircraft)
 			if err != nil {
 				return nil, err
 			}
 
-			if len(data) != 0 {
-				output = append(output, data)
+			output = append(output, data)
+
+		case *model.Aircraft:
+			if aircraft != nil {
+				output = append(output, []byte(message(*aircraft)))
 			}
-		}
-
-		return bytes.Join(output, []byte("\n")), nil
-
-	case []*model.Aircraft:
-		acs := []model.Aircraft{}
-		for _, ac := range aircraft {
-			if ac != nil {
-				acs = append(acs, *ac)
+		case []model.Aircraft:
+			data, err := s.Serialize(model.UntypeArray(aircraft)...)
+			if err != nil {
+				return nil, err
 			}
-		}
 
-		return s.Serialize(acs)
+			output = append(output, data)
+		case []*model.Aircraft:
+			data, err := s.Serialize(model.UntypeArray(aircraft)...)
+			if err != nil {
+				return nil, err
+			}
+
+			output = append(output, data)
+		}
 	}
 
-	return nil, nil
+	return bytes.Join(output, []byte("\n")), nil
 }
 
 // MimeType implements the Serialize.Serializer interface.

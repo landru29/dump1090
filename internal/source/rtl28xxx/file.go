@@ -64,14 +64,14 @@ func (s *SourceFile) Start(ctx context.Context) error {
 }
 
 func (s *SourceFile) start(ctx context.Context) error {
-	fd, err := os.Open(s.filename)
+	fileDescriptor, err := os.Open(s.filename)
 	if err != nil {
 		return err
 	}
 
 	defer func(closer io.Closer) {
 		_ = closer.Close()
-	}(fd)
+	}(fileDescriptor)
 
-	return NewReader(fd, s.processor).Start(ctx)
+	return NewReader(fileDescriptor, s.processor).Start(ctx)
 }

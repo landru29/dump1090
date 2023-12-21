@@ -14,7 +14,11 @@ import (
 )
 
 func TestUnmarshal(t *testing.T) {
+	t.Parallel()
+
 	t.Run("basics", func(t *testing.T) {
+		t.Parallel()
+
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
@@ -31,6 +35,8 @@ func TestUnmarshal(t *testing.T) {
 	})
 
 	t.Run("any ADS-B message", func(t *testing.T) {
+		t.Parallel()
+
 		file, err := os.Open("testdata/sample_data_adsb.csv")
 		require.NoError(t, err)
 
@@ -57,6 +63,8 @@ func TestUnmarshal(t *testing.T) {
 	})
 
 	t.Run("from Dump1090", func(t *testing.T) {
+		t.Parallel()
+
 		file, err := os.Open("testdata/dump1090.txt")
 		require.NoError(t, err)
 

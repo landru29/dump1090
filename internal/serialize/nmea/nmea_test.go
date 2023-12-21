@@ -19,6 +19,8 @@ func displayBytes(t *testing.T, data []uint8) {
 }
 
 func TestCheckSum(t *testing.T) {
+	t.Parallel()
+
 	sentences := []string{
 		"!AIVDM,1,1,,B,177KQJ5000G?tO`K>RA1wUbN0TKH,0*5C",
 		"!AIVDM,1,1,,A,15RTgt0PAso;90TKcjM8h6g208CQ,0*4A",
@@ -29,6 +31,8 @@ func TestCheckSum(t *testing.T) {
 		value := sentence
 
 		t.Run(value, func(t *testing.T) {
+			t.Parallel()
+
 			fields := fields(bytes.Split([]byte(value), []byte{','}))
 
 			assert.Equal(t, value[len(value)-2:], fields.checkSum())
@@ -37,6 +41,8 @@ func TestCheckSum(t *testing.T) {
 }
 
 func TestAddData(t *testing.T) {
+	t.Parallel()
+
 	for _, elt := range []struct {
 		expected    []uint8
 		input       any
@@ -53,6 +59,8 @@ func TestAddData(t *testing.T) {
 		fixture := elt
 
 		t.Run("", func(t *testing.T) {
+			t.Parallel()
+
 			encoded := make([]uint8, 10)
 
 			_, _ = payloadAddData(encoded, fixture.input, fixture.bitPosition, fixture.length)
@@ -65,6 +73,8 @@ func TestAddData(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t,
 		"123456789:;<=>?@ABCDEFGHIJKL",
 		encodeBinaryPayload([]uint8{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28}),

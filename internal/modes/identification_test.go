@@ -10,7 +10,11 @@ import (
 )
 
 func TestIdentification(t *testing.T) {
+	t.Parallel()
+
 	t.Run("basics", func(t *testing.T) {
+		t.Parallel()
+
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 

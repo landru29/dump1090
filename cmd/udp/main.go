@@ -62,10 +62,10 @@ func main() {
 
 	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", defaultUDPport, "port to bind")
 
-	s := make(chan os.Signal, 1)
+	osSignal := make(chan os.Signal, 1)
 
 	// add any other syscalls that you want to be notified with
-	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
@@ -73,7 +73,7 @@ func main() {
 	}()
 
 	go func() {
-		<-s
+		<-osSignal
 
 		cancel()
 	}()

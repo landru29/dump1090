@@ -10,6 +10,8 @@ import (
 )
 
 func TestMarshalSquawk(t *testing.T) {
+	t.Parallel()
+
 	ident := model.Squawk(7123)
 
 	out, err := json.Marshal(ident)
@@ -19,7 +21,11 @@ func TestMarshalSquawk(t *testing.T) {
 }
 
 func TestUnmarshalSquawk(t *testing.T) {
+	t.Parallel()
+
 	t.Run("no error", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.Squawk
 
 		err := json.Unmarshal([]byte("7123"), &icao)
@@ -29,6 +35,8 @@ func TestUnmarshalSquawk(t *testing.T) {
 	})
 
 	t.Run("too high", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.Squawk
 
 		err := json.Unmarshal([]byte("17123"), &icao)
@@ -36,6 +44,8 @@ func TestUnmarshalSquawk(t *testing.T) {
 	})
 
 	t.Run("digit", func(t *testing.T) {
+		t.Parallel()
+
 		var icao model.Squawk
 
 		err := json.Unmarshal([]byte(`8900`), &icao)

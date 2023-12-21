@@ -13,7 +13,6 @@ linters:
   disable:
     - wrapcheck
     - noctx
-    - paralleltest
     - exhaustivestruct
     - goerr113
     - scopelint
@@ -23,7 +22,6 @@ linters:
     - exhaustruct
     - interfacebloat
     - depguard
-    - godot
     - maintidx
     - tagliatelle
 # Deprecated
@@ -33,9 +31,6 @@ linters:
     - deadcode
     - ifshort
     - varcheck
-    # - testpackage
-    - tparallel
-    - varnamelen
     - wsl
 
 issues:

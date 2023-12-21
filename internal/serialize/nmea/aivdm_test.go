@@ -8,6 +8,8 @@ import (
 )
 
 func TestFields(t *testing.T) {
+	t.Parallel()
+
 	fields, err := payload{
 		MMSI:              371798000,
 		NavigationStatus:  navigationStatusUnderWaySailing,

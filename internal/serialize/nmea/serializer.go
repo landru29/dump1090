@@ -35,35 +35,29 @@ func New(mmsiVessel VesselType, mid uint16) *Serializer {
 }
 
 // Serialize implements the Serialize.Serializer interface.
-func (s Serializer) Serialize(ac any) ([]byte, error) {
-	if ac == nil {
-		return nil, nil
-	}
+func (s Serializer) Serialize(planes ...any) ([]byte, error) {
+	output := [][]byte{}
 
-	switch aircraft := ac.(type) {
-	case model.Aircraft:
-		return s.Serialize([]*model.Aircraft{&aircraft})
-	case *model.Aircraft:
-		return s.Serialize([]*model.Aircraft{aircraft})
-	case []model.Aircraft:
-		out := make([]*model.Aircraft, len(aircraft))
-		for idx := range aircraft {
-			out[idx] = &aircraft[idx]
-		}
+	for _, ac := range planes {
+		switch aircraft := ac.(type) {
+		case model.Aircraft:
+			data, err := s.Serialize(&aircraft)
+			if err != nil {
+				return nil, err
+			}
 
-		return s.Serialize(out)
-	case []*model.Aircraft:
-		output := [][]byte{}
-		for _, ac := range aircraft {
-			if ac.Position != nil {
+			output = append(output, data)
+
+		case *model.Aircraft:
+			if aircraft != nil && aircraft.Position != nil {
 				fields, err := payload{
-					MMSI:             s.MMSI(ac.Addr),
-					Longitude:        ac.Position.Longitude,
-					Latitude:         ac.Position.Latitude,
-					SpeedOverGround:  float64(ac.Speed) / speedOverGroundScale,
+					MMSI:             s.MMSI(aircraft.Addr),
+					Longitude:        aircraft.Position.Longitude,
+					Latitude:         aircraft.Position.Latitude,
+					SpeedOverGround:  float64(aircraft.Speed) / speedOverGroundScale,
 					PositionAccuracy: true,
-					CourseOverGround: float64(ac.Track),
-					TrueHeading:      uint16(ac.Track),
+					CourseOverGround: float64(aircraft.Track),
+					TrueHeading:      uint16(aircraft.Track),
 					NavigationStatus: navigationStatusAground,
 				}.Fields()
 				if err != nil {
@@ -71,16 +65,24 @@ func (s Serializer) Serialize(ac any) ([]byte, error) {
 				}
 				output = append(output, []byte(fields.String()))
 			}
-		}
+		case []model.Aircraft:
+			data, err := s.Serialize(model.UntypeArray(aircraft)...)
+			if err != nil {
+				return nil, err
+			}
 
-		if len(output) == 0 {
-			return nil, nil
-		}
+			output = append(output, data)
+		case []*model.Aircraft:
+			data, err := s.Serialize(model.UntypeArray(aircraft)...)
+			if err != nil {
+				return nil, err
+			}
 
-		return bytes.Join(output, []byte("\n")), nil
+			output = append(output, data)
+		}
 	}
 
-	return nil, nil
+	return bytes.Join(output, []byte("\n")), nil
 }
 
 // MimeType implements the Serialize.Serializer interface.

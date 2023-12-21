@@ -19,6 +19,8 @@ import (
 // +-------+-----+--------------+---+---+-------------------+-------------------+
 
 func TestAirbornPosition(t *testing.T) {
+	t.Parallel()
+
 	for idx, fixtureElt := range []struct {
 		input    string
 		expected modes.AirbornePosition
@@ -53,6 +55,8 @@ func TestAirbornPosition(t *testing.T) {
 		fixture := fixtureElt
 
 		t.Run(fmt.Sprintf("%d: %s", idx, fixture.input), func(t *testing.T) {
+			t.Parallel()
+
 			dataByte, err := hex.DecodeString(fixture.input)
 			require.NoError(t, err)
 

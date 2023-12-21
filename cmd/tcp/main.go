@@ -83,8 +83,8 @@ func main() { //nolint: funlen,gocognit
 		Long:  "dial tcp addr",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				d    net.Dialer
-				conn net.Conn
+				dialer net.Dialer
+				conn   net.Conn
 			)
 
 			cmd.Printf("trying to connect to %s ...\n", address)
@@ -92,7 +92,7 @@ func main() { //nolint: funlen,gocognit
 			bckoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(1*time.Second), maxRetries)
 			err := backoff.Retry(func() error {
 				var err error
-				conn, err = d.DialContext(cmd.Context(), "tcp", address)
+				conn, err = dialer.DialContext(cmd.Context(), "tcp", address)
 				if err != nil {
 					return err
 				}
@@ -146,10 +146,10 @@ func main() { //nolint: funlen,gocognit
 	rootCommand.PersistentFlags().Uint32VarP(&port, "port", "p", defaultTCPport, "port to bind")
 	rootCommand.PersistentFlags().StringVarP(&address, "addr", "a", "127.0.0.1:3000", "address to dial")
 
-	s := make(chan os.Signal, 1)
+	osSignal := make(chan os.Signal, 1)
 
 	// add any other syscalls that you want to be notified with
-	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
@@ -157,7 +157,7 @@ func main() { //nolint: funlen,gocognit
 	}()
 
 	go func() {
-		<-s
+		<-osSignal
 
 		cancel()
 	}()

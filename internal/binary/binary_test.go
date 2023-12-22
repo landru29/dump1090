@@ -1,9 +1,9 @@
-package modes_test
+package binary_test
 
 import (
 	"testing"
 
-	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/binary"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestReadBits(t *testing.T) {
 		//              1011 10011101 10110001 0111
 		data := []byte{0xba, 0xfb, 0x9d, 0xb1, 0x73, 0xd6, 0x6b, 0xfd, 0x6d, 0x5b}
 
-		bits := modes.ReadBits(data, 12, 24)
+		bits := binary.ReadBits(data, 12, 24)
 
 		assert.Equal(t, uint64(0xb9db17), bits)
 	})
@@ -29,7 +29,7 @@ func TestReadBits(t *testing.T) {
 		//          11111011 10011101 10110001
 		data := []byte{0xba, 0xfb, 0x9d, 0xb1, 0x73, 0xd6, 0x6b, 0xfd, 0x6d, 0x5b}
 
-		bits := modes.ReadBits(data, 8, 24)
+		bits := binary.ReadBits(data, 8, 24)
 
 		assert.Equal(t, uint64(0xfb9db1), bits)
 	})
@@ -41,7 +41,7 @@ func TestReadBits(t *testing.T) {
 		//            111011 10011101 10110
 		data := []byte{0xba, 0xfb, 0x9d, 0xb1, 0x73, 0xd6, 0x6b, 0xfd, 0x6d, 0x5b}
 
-		bits := modes.ReadBits(data, 10, 19)
+		bits := binary.ReadBits(data, 10, 19)
 
 		assert.Equal(t, uint64(0x773b6), bits)
 	})
@@ -57,7 +57,7 @@ func TestWriteBits(t *testing.T) {
 		//              1011 10011101 10110001 0111
 		data := make([]byte, 10)
 
-		modes.WriteBits(data, uint64(0xb9db17), 12, 24)
+		binary.WriteBits(data, uint64(0xb9db17), 12, 24)
 
 		assert.Equal(t, []byte{0x00, 0x0b, 0x9d, 0xb1, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -69,7 +69,7 @@ func TestWriteBits(t *testing.T) {
 		//          11111011 10011101 10110001
 		data := make([]byte, 10)
 
-		modes.WriteBits(data, uint64(0xfb9db1), 8, 24)
+		binary.WriteBits(data, uint64(0xfb9db1), 8, 24)
 
 		assert.Equal(t, []byte{0x00, 0xfb, 0x9d, 0xb1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -81,7 +81,7 @@ func TestWriteBits(t *testing.T) {
 		//            111011 10011101 10110
 		data := make([]byte, 10)
 
-		modes.WriteBits(data, uint64(0x773b6), 10, 19)
+		binary.WriteBits(data, uint64(0x773b6), 10, 19)
 
 		assert.Equal(t, []byte{0x00, 0x3b, 0x9d, 0xb0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})
@@ -97,7 +97,7 @@ func TestWriteBits(t *testing.T) {
 			data[idx] = 0xff
 		}
 
-		modes.WriteBits(data, uint64(0x773b6), 10, 19)
+		binary.WriteBits(data, uint64(0x773b6), 10, 19)
 
 		assert.Equal(t, []byte{0xff, 0xfb, 0x9d, 0xb7, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
 	})
@@ -113,7 +113,7 @@ func TestWriteBits(t *testing.T) {
 			data[idx] = 0xff
 		}
 
-		modes.WriteBits(data, uint64(0), 10, 19)
+		binary.WriteBits(data, uint64(0), 10, 19)
 
 		assert.Equal(t, []byte{0xff, 0xc0, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, data)
 	})
@@ -125,7 +125,7 @@ func TestWriteBits(t *testing.T) {
 		//            111111 11111111 11111
 		data := make([]byte, 10)
 
-		modes.WriteBits(data, uint64(0x7ffff), 10, 19)
+		binary.WriteBits(data, uint64(0x7ffff), 10, 19)
 
 		assert.Equal(t, []byte{0x00, 0x3f, 0xff, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, data)
 	})

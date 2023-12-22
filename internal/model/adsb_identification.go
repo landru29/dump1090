@@ -1,4 +1,4 @@
-package modes
+package model
 
 //       ┏━━━━┓
 //       ┃ 31 ┃

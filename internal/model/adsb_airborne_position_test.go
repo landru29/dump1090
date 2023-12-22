@@ -1,4 +1,4 @@
-package modes_test
+package model_test
 
 import (
 	"encoding/hex"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,12 +23,12 @@ func TestAirbornPosition(t *testing.T) {
 
 	for idx, fixtureElt := range []struct {
 		input    string
-		expected modes.AirbornePosition
+		expected model.AirbornePosition
 	}{
 		{
 			input: "8D40621D58C382D690C8AC2863A7",
-			expected: modes.AirbornePosition{
-				SurveillanceStatus: modes.SurveillanceStatusNoCondition,
+			expected: model.AirbornePosition{
+				SurveillanceStatus: model.SurveillanceStatusNoCondition,
 				SingleAntennaFlag:  false,
 				EncodedAltitude:    0xc38,
 				TimeUTC:            false,
@@ -40,8 +40,8 @@ func TestAirbornPosition(t *testing.T) {
 		},
 		{
 			input: "8D40621D58C386435CC412692AD6",
-			expected: modes.AirbornePosition{
-				SurveillanceStatus: modes.SurveillanceStatusNoCondition,
+			expected: model.AirbornePosition{
+				SurveillanceStatus: model.SurveillanceStatusNoCondition,
 				SingleAntennaFlag:  false,
 				EncodedAltitude:    0xc38,
 				TimeUTC:            false,
@@ -60,9 +60,9 @@ func TestAirbornPosition(t *testing.T) {
 			dataByte, err := hex.DecodeString(fixture.input)
 			require.NoError(t, err)
 
-			msg := modes.ExtendedSquitter{}
+			msg := model.ExtendedSquitter{}
 
-			require.NoError(t, msg.Unmarshal(dataByte))
+			require.NoError(t, msg.UnmarshalModeS(dataByte))
 
 			airbornePosition, err := msg.AirbornePosition()
 			require.NoError(t, err)

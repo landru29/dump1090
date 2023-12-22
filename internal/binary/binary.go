@@ -1,4 +1,5 @@
-package modes
+// Package binary provides all binary operations.
+package binary
 
 // ReadBits reads a set of bits.
 func ReadBits(data []byte, bitCursor uint64, count uint8) uint64 {

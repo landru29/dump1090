@@ -1,15 +1,4 @@
-package modes
-
-// ChecksumSquitter computes and check the checksum.
-func (e ExtendedSquitter) ChecksumSquitter() error {
-	remainder := ChecksumSquitter(e.ModeS.Raw[:len(e.ModeS.Raw)-3])
-
-	if remainder != e.ParityInterrogator {
-		return ErrWrongCRC
-	}
-
-	return nil
-}
+package binary
 
 // ChecksumSquitter computes the checksum.
 func ChecksumSquitter(input []byte) uint32 {

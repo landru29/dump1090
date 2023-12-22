@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/landru29/dump1090/internal/source"
 )
 
 // verticalRate := int64(aircraft.Message.VertRate-1)
@@ -12,6 +14,8 @@ import (
 
 // Aircraft is an aircraft description.
 type Aircraft struct {
+	Identification *Identification
+
 	IcaoAddress        ICAOAddr  `json:"icaoAddress"`
 	Altitude           int64     `json:"altitude"`
 	Position           *Position `json:"position,omitempty"`
@@ -67,4 +71,31 @@ func (a Aircraft) Ground() bool {
 func (a Aircraft) Indent() bool {
 	return (a.LastDownlinkFormat == 4 || a.LastDownlinkFormat == 5 || a.LastDownlinkFormat == 21) &&
 		(a.LastFlightStatus == 4 || a.LastFlightStatus == 5)
+}
+
+// UnmarshalModeS is the mode-s unmarshaler.
+func (a *Aircraft) UnmarshalModeS(data []byte) error {
+	extendedSquitter := &ExtendedSquitter{}
+
+	err := extendedSquitter.UnmarshalModeS(data)
+	if err != nil {
+		return err
+	}
+
+	switch extendedSquitter.Type { //nolint: gocritic, exhaustive
+	case MessageTypeAircraftIdentification:
+		id, err := extendedSquitter.Identification()
+		if err != nil {
+			return err
+		}
+
+		a.Identification = id
+	}
+
+	return nil
+}
+
+// ToSource ...
+func (a Aircraft) ToSource() source.Aircraft {
+	return source.Aircraft{}
 }

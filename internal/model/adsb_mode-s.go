@@ -1,4 +1,6 @@
-package modes
+package model
+
+import "github.com/landru29/dump1090/internal/errors"
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃                                  Mode S                                    ┃
@@ -61,6 +63,20 @@ package modes
 //
 //
 
+const (
+	// ErrWrongMessageSize is when the message size is not coherent.
+	ErrWrongMessageSize errors.Error = "wrong message size"
+
+	// ErrWrongMessageType is when the message type is not recognized.
+	ErrWrongMessageType errors.Error = "wrong message type"
+
+	// ErrWrongCRC is when a wrong CRC was encountered.
+	ErrWrongCRC errors.Error = "wrong CRC"
+
+	// ErrUnsupportedDownlinkFormat is when the downloink format is not supported.
+	ErrUnsupportedDownlinkFormat errors.Error = "unsupported downlink format"
+)
+
 // DownlinkFormat is the 5 first bits of an ADSB message.
 type DownlinkFormat byte
 
@@ -96,8 +112,8 @@ type ModeS struct {
 	Raw                []byte
 }
 
-// Unmarshal is the mode-S unmarshaler.
-func (m *ModeS) Unmarshal(data []byte) error {
+// UnmarshalModeS is the mode-S unmarshaler.
+func (m *ModeS) UnmarshalModeS(data []byte) error {
 	if len(data) < 4 { //nolint: gomnd
 		return ErrWrongMessageSize
 	}

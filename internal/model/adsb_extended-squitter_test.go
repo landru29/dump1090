@@ -1,4 +1,4 @@
-package modes_test
+package model_test
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,14 +22,14 @@ func TestUnmarshal(t *testing.T) {
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		msg := modes.ExtendedSquitter{}
+		msg := model.ExtendedSquitter{}
 
-		require.NoError(t, msg.Unmarshal(dataByte))
+		require.NoError(t, msg.UnmarshalModeS(dataByte))
 
-		assert.Equal(t, modes.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
+		assert.Equal(t, model.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
 		assert.Equal(t, byte(5), msg.TransponderCapability)
-		assert.Equal(t, modes.AircraftAddress(4735190), msg.AircraftAddress)
-		assert.Equal(t, modes.TypeCode(0x04), msg.TypeCode)
+		assert.Equal(t, model.ICAOAddr(4735190), msg.AircraftAddress)
+		assert.Equal(t, model.TypeCode(0x04), msg.TypeCode)
 		assert.Equal(t, uint32(0x576098), msg.ModeS.ParityInterrogator)
 		assert.Len(t, msg.Message, 56/8)
 	})
@@ -55,9 +55,9 @@ func TestUnmarshal(t *testing.T) {
 				dataByte, err := hex.DecodeString(msgStr)
 				require.NoError(t, err)
 
-				msg := modes.ExtendedSquitter{}
+				msg := model.ExtendedSquitter{}
 
-				require.NoError(t, msg.Unmarshal(dataByte))
+				require.NoError(t, msg.UnmarshalModeS(dataByte))
 			})
 		}
 	})
@@ -77,9 +77,9 @@ func TestUnmarshal(t *testing.T) {
 				dataByte, err := hex.DecodeString(line[1 : len(line)-1])
 				require.NoError(t, err)
 
-				modeS := &modes.ModeS{}
+				modeS := &model.ModeS{}
 
-				require.NoError(t, modeS.Unmarshal(dataByte))
+				require.NoError(t, modeS.UnmarshalModeS(dataByte))
 			})
 		}
 	})

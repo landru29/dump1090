@@ -1,26 +1,16 @@
-// Package modes is the Mode S.
-package modes
+package model
 
-import (
-	"github.com/landru29/dump1090/internal/errors"
-)
+import "github.com/landru29/dump1090/internal/binary"
 
-const (
-	// ErrWrongMessageSize is when the message size is not coherent.
-	ErrWrongMessageSize errors.Error = "wrong message size"
-
-	// ErrWrongMessageType is when the message type is not recognized.
-	ErrWrongMessageType errors.Error = "wrong message type"
-
-	// ErrWrongCRC is when a wrong CRC was encountered.
-	ErrWrongCRC errors.Error = "wrong CRC"
-
-	// ErrUnsupportedDownlinkFormat is when the downloink format is not supported.
-	ErrUnsupportedDownlinkFormat errors.Error = "unsupported downlink format"
-)
-
-// AircraftAddress is the ICAO address of an aircraft.
-type AircraftAddress uint32
+// ┏━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┓
+// ┃ DF  |                      Extended squitter                      | Parity ┃
+// ┠┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┨
+// ┃  5  |                             83                              |   24   ┃
+// ┗━━━━━╈━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╈━━━━━━━━┛
+//       ┃ CA | ICAO |                    Message                      ┃
+//       ┠┈┈┈┈┼┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┨
+//       ┃ 3  |  24  |                       56                        ┃
+//       ┗━━━━┷━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 // TypeCode is the type of the exetended squitter.
 type TypeCode byte
@@ -29,7 +19,7 @@ type TypeCode byte
 type ExtendedSquitter struct {
 	ModeS
 	TransponderCapability byte
-	AircraftAddress       AircraftAddress
+	AircraftAddress       ICAOAddr
 	TypeCode              TypeCode
 	Message               []byte
 	Type                  MessageType
@@ -59,9 +49,9 @@ const (
 	MessageTypeAircraftOperationStatus
 )
 
-// Unmarshal parses the message.
-func (e *ExtendedSquitter) Unmarshal(data []byte) error { //nolint: cyclop
-	if err := (&e.ModeS).Unmarshal(data); err != nil {
+// UnmarshalModeS parses the message.
+func (e *ExtendedSquitter) UnmarshalModeS(data []byte) error { //nolint: cyclop
+	if err := (&e.ModeS).UnmarshalModeS(data); err != nil {
 		return err
 	}
 
@@ -79,7 +69,7 @@ func (e *ExtendedSquitter) Unmarshal(data []byte) error { //nolint: cyclop
 
 	e.TransponderCapability = data[0] & 0x07 //nolint: gomnd
 
-	e.AircraftAddress = AircraftAddress((uint32(messageData[0]) << 16) + //nolint: gomnd
+	e.AircraftAddress = ICAOAddr((uint32(messageData[0]) << 16) + //nolint: gomnd
 		(uint32(messageData[1]) << 8) + //nolint: gomnd
 		uint32(messageData[2]))
 
@@ -125,4 +115,15 @@ func (e *ExtendedSquitter) Unmarshal(data []byte) error { //nolint: cyclop
 	}
 
 	return e.ChecksumSquitter()
+}
+
+// ChecksumSquitter computes and check the checksum.
+func (e ExtendedSquitter) ChecksumSquitter() error {
+	remainder := binary.ChecksumSquitter(e.ModeS.Raw[:len(e.ModeS.Raw)-3])
+
+	if remainder != e.ParityInterrogator {
+		return ErrWrongCRC
+	}
+
+	return nil
 }

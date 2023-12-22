@@ -5,6 +5,7 @@
 	"build": {
         "dockerfile": "Dockerfile"
     },
+	"runArgs": ["--name", "dump1090", "--volume", "${localEnv:HOME}/.ssh:/home/vscode/.ssh:ro"],
 
 	"workspaceMount": "source=${localWorkspaceFolder},target=/app/dump1090,type=bind",
 	"workspaceFolder": "/app/dump1090",

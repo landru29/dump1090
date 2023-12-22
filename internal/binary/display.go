@@ -1,4 +1,4 @@
-package modes
+package binary
 
 import (
 	"bytes"
@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) { //nolint: unused
+// DisplayBits displays a set of bits on a writer.
+func DisplayBits(output io.Writer, dataByte any, leadingSpaces int, size int) {
 	line := bytes.NewBuffer(nil)
 
 	switch data := dataByte.(type) {
@@ -28,7 +29,7 @@ func displayBits(output io.Writer, dataByte any, leadingSpaces int, size int) { 
 	fmt.Fprintf(output, "%s\n", segmentString(strings.Repeat(" ", leadingSpaces)+timStringSize(line.String(), size)))
 }
 
-func segmentString(str string) string { //nolint: unused
+func segmentString(str string) string {
 	output := bytes.NewBuffer(nil)
 
 	for idx, char := range str {
@@ -42,7 +43,7 @@ func segmentString(str string) string { //nolint: unused
 	return output.String()
 }
 
-func timStringSize(str string, size int) string { //nolint: unused
+func timStringSize(str string, size int) string {
 	if size < 0 {
 		return str
 	}
@@ -54,7 +55,7 @@ func timStringSize(str string, size int) string { //nolint: unused
 	return str[len(str)-size:]
 }
 
-func trimStringZero(str string) string { //nolint: unused
+func trimStringZero(str string) string {
 	output := bytes.NewBuffer(nil)
 
 	leading := true

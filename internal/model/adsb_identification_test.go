@@ -1,10 +1,10 @@
-package modes_test
+package model_test
 
 import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,9 +18,9 @@ func TestIdentification(t *testing.T) {
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		msg := modes.ExtendedSquitter{}
+		msg := model.ExtendedSquitter{}
 
-		require.NoError(t, msg.Unmarshal(dataByte))
+		require.NoError(t, msg.UnmarshalModeS(dataByte))
 
 		ident, err := msg.Identification()
 		require.NoError(t, err)

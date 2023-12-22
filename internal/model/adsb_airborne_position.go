@@ -1,4 +1,4 @@
-package modes
+package model
 
 import "time"
 

@@ -18,24 +18,24 @@ const (
 type ICAOAddr uint32
 
 // MarshalJSON implements the json.Marshaler interface.
-func (i ICAOAddr) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + i.String() + `"`), nil
+func (a ICAOAddr) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + a.String() + `"`), nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (i *ICAOAddr) UnmarshalJSON(data []byte) error {
+func (a *ICAOAddr) UnmarshalJSON(data []byte) error {
 	if len(data) < minICAOsizeJSON || data[0] != '"' || data[len(data)-1] != '"' {
 		return ErrWrongICAO
 	}
 
 	value, err := strconv.ParseUint(string(data[1:len(data)-1]), 16, 32)
 
-	*i = ICAOAddr(value)
+	*a = ICAOAddr(value)
 
 	return err
 }
 
 // String implements the Stringer interface.
-func (i ICAOAddr) String() string {
-	return strings.ToUpper(strconv.FormatUint(uint64(i), 16))
+func (a ICAOAddr) String() string {
+	return strings.ToUpper(strconv.FormatUint(uint64(a), 16))
 }

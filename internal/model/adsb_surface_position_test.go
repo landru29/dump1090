@@ -1,4 +1,4 @@
-package modes_test
+package model_test
 
 import (
 	"encoding/hex"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/landru29/dump1090/internal/modes"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,11 +23,11 @@ func TestSurfacePosition(t *testing.T) {
 
 	for idx, fixtureElt := range []struct {
 		input    string
-		expected modes.SurfacePosition
+		expected model.SurfacePosition
 	}{
 		{
 			input: "8C4841753AAB238733C8CD4020B1",
-			expected: modes.SurfacePosition{
+			expected: model.SurfacePosition{
 				GroundTrack:      140.625,
 				TimeUTC:          false,
 				OddFrame:         false,
@@ -38,7 +38,7 @@ func TestSurfacePosition(t *testing.T) {
 		},
 		{
 			input: "8C4841753A8A35323FAEBDAC702D",
-			expected: modes.SurfacePosition{
+			expected: model.SurfacePosition{
 				GroundTrack:      98.4375,
 				TimeUTC:          false,
 				OddFrame:         true,
@@ -56,9 +56,9 @@ func TestSurfacePosition(t *testing.T) {
 			dataByte, err := hex.DecodeString(fixture.input)
 			require.NoError(t, err)
 
-			msg := modes.ExtendedSquitter{}
+			msg := model.ExtendedSquitter{}
 
-			require.NoError(t, msg.Unmarshal(dataByte))
+			require.NoError(t, msg.UnmarshalModeS(dataByte))
 
 			surfacePosition, err := msg.SurfacePosition()
 			require.NoError(t, err)

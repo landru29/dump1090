@@ -39,6 +39,8 @@ issues:
         - dupl
         - goconst
         - forcetypeassert
+        - dupl
+        - varnamelen
 
     - path: internal/processor/.*\.go
       linters:

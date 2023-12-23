@@ -11,27 +11,33 @@ import (
 
 // Process is the data processor.
 type Process struct {
-	ExtendedSquitters *database.Storage[model.ICAOAddr, model.ExtendedSquitter]
+	ExtendedSquitters *database.Storage[model.ICAOAddr, model.Squitter]
 }
 
 // New creates a data processor.
 func New(ctx context.Context, dbLifeTime time.Duration) *Process {
 	return &Process{
-		ExtendedSquitters: database.New[model.ICAOAddr, model.ExtendedSquitter](
+		ExtendedSquitters: database.New[model.ICAOAddr, model.Squitter](
 			ctx,
-			database.WithLifetime[model.ICAOAddr, model.ExtendedSquitter](dbLifeTime),
+			database.WithLifetime[model.ICAOAddr, model.Squitter](dbLifeTime),
 		),
 	}
 }
 
 // Process implements source.Processor the interface.
 func (p Process) Process(data []byte) error {
-	message := &model.ExtendedSquitter{}
-	if err := message.UnmarshalModeS(data); err != nil {
+	modes := model.ModeS(data)
+
+	if err := modes.CheckSum(); err != nil {
 		return err
 	}
 
-	p.ExtendedSquitters.Add(message.AircraftAddress, *message)
+	squitter, err := modes.Squitter()
+	if err != nil {
+		return err
+	}
+
+	p.ExtendedSquitters.Add(squitter.AircraftAddress(), squitter)
 
 	return nil
 }

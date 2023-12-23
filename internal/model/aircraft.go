@@ -74,26 +74,26 @@ func (a Aircraft) Indent() bool {
 }
 
 // UnmarshalModeS is the mode-s unmarshaler.
-func (a *Aircraft) UnmarshalModeS(data []byte) error {
-	extendedSquitter := &ExtendedSquitter{}
+// func (a *Aircraft) UnmarshalModeS(data []byte) error {
+// 	extendedSquitter := &ExtendedSquitter{}
 
-	err := extendedSquitter.UnmarshalModeS(data)
-	if err != nil {
-		return err
-	}
+// 	err := extendedSquitter.UnmarshalModeS(data)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	switch extendedSquitter.Type { //nolint: gocritic, exhaustive
-	case MessageTypeAircraftIdentification:
-		id, err := extendedSquitter.Identification()
-		if err != nil {
-			return err
-		}
+// 	switch extendedSquitter.Type { //nolint: gocritic, exhaustive
+// 	case MessageTypeAircraftIdentification:
+// 		id, err := extendedSquitter.Identification()
+// 		if err != nil {
+// 			return err
+// 		}
 
-		a.Identification = id
-	}
+// 		a.Identification = id
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // ToSource ...
 func (a Aircraft) ToSource() source.Aircraft {

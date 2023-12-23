@@ -14,18 +14,28 @@ func TestIdentification(t *testing.T) {
 
 	t.Run("basics", func(t *testing.T) {
 		t.Parallel()
-
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		msg := model.ExtendedSquitter{}
+		require.NoError(t, model.ModeS(dataByte).CheckSum())
 
-		require.NoError(t, msg.UnmarshalModeS(dataByte))
-
-		ident, err := msg.Identification()
+		squitter, err := model.ModeS(dataByte).Squitter()
 		require.NoError(t, err)
 
-		assert.Equal(t, "KLM1023 ", ident.String)
-		assert.Equal(t, byte(0), ident.Category)
+		require.Equal(t, "extended squitter", squitter.Name())
+
+		extendedSquitter, ok := squitter.(model.ExtendedSquitter)
+		assert.True(t, ok)
+
+		msg, err := extendedSquitter.Decode()
+		require.NoError(t, err)
+
+		assert.Equal(t, "identification", msg.Name())
+
+		identification, ok := msg.(model.Identification)
+		assert.True(t, ok)
+
+		assert.Equal(t, "KLM1023 ", identification.String())
+		assert.Equal(t, model.Category(0), identification.Category())
 	})
 }

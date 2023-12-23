@@ -4,52 +4,47 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/landru29/dump1090/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// +-------+-----+--------------+---+---+-------------------+-------------------+
-// | TC    |     | ALT          | T | F | CPR-LAT           | CPR-LON           |
-// +-------+-----+--------------+---+---+-------------------+-------------------+
-// | 01011 | 000 | 110000111000 | 0 | 0 | 10110101101001000 | 01100100010101100 |
-// | 01011 | 000 | 110000111000 | 0 | 1 | 10010000110101110 | 01100010000010010 |
-// +-------+-----+--------------+---+---+-------------------+-------------------+
-
-func TestAirbornPosition(t *testing.T) {
+func TestAirbornePosition(t *testing.T) {
 	t.Parallel()
 
 	for idx, fixtureElt := range []struct {
-		input    string
-		expected model.AirbornePosition
+		input              string
+		surveillanceStatus model.SurveillanceStatus
+		singleAntennaFlag  bool
+		encodedAltitude    uint16
+		timeUTC            bool
+		oddFrame           bool
+		encodedLatitude    uint32
+		encodedLongitude   uint32
+		baro               bool
 	}{
 		{
-			input: "8D40621D58C382D690C8AC2863A7",
-			expected: model.AirbornePosition{
-				SurveillanceStatus: model.SurveillanceStatusNoCondition,
-				SingleAntennaFlag:  false,
-				EncodedAltitude:    0xc38,
-				TimeUTC:            false,
-				OddFrame:           false,
-				EncodedLatitude:    0x16b48,
-				EncodedLongitude:   0xc8ac,
-				Baro:               true,
-			},
+			input:              "8D40621D58C382D690C8AC2863A7",
+			surveillanceStatus: model.SurveillanceStatusNoCondition,
+			singleAntennaFlag:  false,
+			encodedAltitude:    0xc38,
+			timeUTC:            false,
+			oddFrame:           false,
+			encodedLatitude:    0x16b48,
+			encodedLongitude:   0xc8ac,
+			baro:               true,
 		},
 		{
-			input: "8D40621D58C386435CC412692AD6",
-			expected: model.AirbornePosition{
-				SurveillanceStatus: model.SurveillanceStatusNoCondition,
-				SingleAntennaFlag:  false,
-				EncodedAltitude:    0xc38,
-				TimeUTC:            false,
-				OddFrame:           true,
-				EncodedLatitude:    0x121ae,
-				EncodedLongitude:   0xc412,
-				Baro:               true,
-			},
+			input:              "8D40621D58C386435CC412692AD6",
+			surveillanceStatus: model.SurveillanceStatusNoCondition,
+			singleAntennaFlag:  false,
+			encodedAltitude:    0xc38,
+			timeUTC:            false,
+			oddFrame:           true,
+			encodedLatitude:    0x121ae,
+			encodedLongitude:   0xc412,
+			baro:               true,
 		},
 	} {
 		fixture := fixtureElt
@@ -60,17 +55,32 @@ func TestAirbornPosition(t *testing.T) {
 			dataByte, err := hex.DecodeString(fixture.input)
 			require.NoError(t, err)
 
-			msg := model.ExtendedSquitter{}
+			require.NoError(t, model.ModeS(dataByte).CheckSum())
 
-			require.NoError(t, msg.UnmarshalModeS(dataByte))
-
-			airbornePosition, err := msg.AirbornePosition()
+			squitter, err := model.ModeS(dataByte).Squitter()
 			require.NoError(t, err)
 
-			// reset time for comparison.
-			airbornePosition.Time = time.Time{}
+			require.Equal(t, "extended squitter", squitter.Name())
 
-			assert.Equal(t, fixture.expected, *airbornePosition)
+			extendedSquitter, ok := squitter.(model.ExtendedSquitter)
+			assert.True(t, ok)
+
+			msg, err := extendedSquitter.Decode()
+			require.NoError(t, err)
+
+			assert.Equal(t, "airborne position", msg.Name())
+
+			position, ok := msg.(model.AirbornePosition)
+			assert.True(t, ok)
+
+			assert.Equal(t, fixture.surveillanceStatus, position.SurveillanceStatus())
+			assert.Equal(t, fixture.singleAntennaFlag, position.SingleAntennaFlag())
+			assert.Equal(t, fixture.encodedAltitude, position.EncodedAltitude())
+			assert.Equal(t, fixture.timeUTC, position.TimeUTC())
+			assert.Equal(t, fixture.oddFrame, position.OddFrame())
+			assert.Equal(t, fixture.encodedLatitude, position.EncodedLatitude())
+			assert.Equal(t, fixture.encodedLongitude, position.EncodedLongitude())
+			assert.Equal(t, fixture.baro, position.Baro())
 		})
 	}
 }

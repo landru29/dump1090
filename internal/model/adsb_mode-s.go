@@ -1,86 +1,55 @@
 package model
 
-import "github.com/landru29/dump1090/internal/errors"
+import (
+	"encoding/hex"
+	"fmt"
+	"strings"
+
+	"github.com/landru29/dump1090/internal/binary"
+	localerrors "github.com/landru29/dump1090/internal/errors"
+	"github.com/pkg/errors"
+)
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 // ┃                                  Mode S                                    ┃
 // ┠┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┨
 // ┃                                    112                                     ┃
 // ┣━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┫
+// ┃ DF  |                          squitter                           | Parity ┃
+// ┠┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┨
+// ┃  5  |                             83 /                            |   24   ┃
+// ┗━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┛
+//
+// DF = 0, 4, 5, 11
+// ┏━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┓
+// ┃ DF  |                        short squitter                       | Parity ┃
+// ┠┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┨
+// ┃  5  |                             27                              |   24   ┃
+// ┗━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┛
+//
+// DF = 16-21, 24
+// ┏━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┓
 // ┃ DF  |                      Extended squitter                      | Parity ┃
 // ┠┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┨
 // ┃  5  |                             83                              |   24   ┃
-// ┗━━━━━╈━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╈━━━━━━━━┛
-//       ┃ CA | ICAO |                    Message                      ┃
-//       ┠┈┈┈┈┼┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┨
-//       ┃ 3  |  24  |                       56                        ┃
-//       ┗━━━━┷━━━━━━╈━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-//                   ┃ TC |                  Payload                   ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┨
-//                   ┃ 5  |                    51                      ┃
-//                   ┗━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-//               Aircraft Identification TC=1-4
-//                   ┏━━━━┯━━━━┯━━━━┯━━━━┯━━━━┯━━━━┯━━━━┯━━━━┯━━━━┯━━━━┓
-//                   ┃ TC | CA | C1 | C2 | C3 | C4 | C5 | C6 | C7 | C8 ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┨
-//                   ┃ 5  |  3 |  6 |  6 |  6 |  6 |  6 |  6 |  6 |  6 ┃
-//                   ┗━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┛
-//                Surface Position TC=4-9
-//                   ┏━━━━┯━━━━━┯━━━━┯━━━━━┯━━━┯━━━┯━━━━━━━━━┯━━━━━━━━━┓
-//                   ┃ TC | MOV | S  | TRK | T | F | LAT-CPR | LON-CPR ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┼┈┈┈┼┈┈┈┼┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┨
-//                   ┃ 5  |  7  | 1  |  7  | 1 | 1 |    17   |   17    ┃
-//                   ┗━━━━┷━━━━━┷━━━━┷━━━━━┷━━━┷━━━┷━━━━━━━━━┷━━━━━━━━━┛
-//                Airborn position TC=8-18, 20-23
-//                   ┏━━━━┯━━━━┯━━━━━┯━━━━━┯━━━┯━━━┯━━━━━━━━━┯━━━━━━━━━┓
-//                   ┃ TC | SS | SAF | ALT | T | F | LAT-CPR | LON-CPR ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┼┈┈┈┼┈┈┈┈┈┈┈┈┈┼┈┈┈┈┈┈┈┈┈┨
-//                   ┃ 5  |  2 |  1  |  12 | 1 | 1 |    17   |   17    ┃
-//                   ┗━━━━┷━━━━┷━━━━━┷━━━━━┷━━━┷━━━┷━━━━━━━━━┷━━━━━━━━━┛
-//                Airborn velocity TC=19
-//                   ┏━━━━┯━━━━┯━━━━┯━━━━━┯━━━━━┯━━━━━┯━━━━━━━┯━━━━━┯━━━━┯━━━━━┯━━━━━━┯━━━━━━┓
-//                   ┃ TC | ST | IC | IFR | NUC |     | VrSrc | Svr | VR | Res | SDif | dAlt ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┼┈┈┈┈┈┈┼┈┈┈┈┈┈┨
-//                   ┃ 5  |  3 |  1 |  1  |  3  |  22 |   1   |  1  | 9  |  2  |  1   |  7   ┃
-//                   ┗━━━━┷━━━━┷━━━━┷━━━━━┷━━━━━┷━━━━━┷━━━━━━━┷━━━━━┷━━━━┷━━━━━┷━━━━━━┷━━━━━━┛
-//                Aircraft status TC=28
-//                Target State And Status Information TC=29
-//                Aircraft Operation Status TC=31
-//                   ┏━━━━┯━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-//                   ┃ TC | ST |                                       ┃
-//                   ┠┈┈┈┈┼┈┈┈┈┼┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┨
-//                   ┃ 5  |  2 |                 48                    ┃
-//                   ┗━━━━┷━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+// ┗━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┛
+
 //
 // ┏━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━┓
 // ┃ name | Description                 | bits ┃
 // ┣━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┿━━━━━━┫
 // ┃ DF   | Downlink Format             |   5  ┃
-// ┃ CA   | Capability                  |   3  ┃
-// ┃ TC   | Type Code                   |   5  ┃
-// ┃ ICAO | Aircraft unique identifier  |  24  ┃
 // ┗━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━┛
 //
 //
 
-const (
-	// ErrWrongMessageSize is when the message size is not coherent.
-	ErrWrongMessageSize errors.Error = "wrong message size"
-
-	// ErrWrongMessageType is when the message type is not recognized.
-	ErrWrongMessageType errors.Error = "wrong message type"
-
-	// ErrWrongCRC is when a wrong CRC was encountered.
-	ErrWrongCRC errors.Error = "wrong CRC"
-
-	// ErrUnsupportedDownlinkFormat is when the downloink format is not supported.
-	ErrUnsupportedDownlinkFormat errors.Error = "unsupported downlink format"
-)
-
 // DownlinkFormat is the 5 first bits of an ADSB message.
-type DownlinkFormat byte
+type DownlinkFormat uint8
 
 const (
+	shortSquitterBitLength    = 56
+	extendedSquitterBitLength = 112
+
 	// DownlinkFormatShortAirAirSurveillance is Short air-air surveillance (ACAS) => message size: 56 bits.
 	DownlinkFormatShortAirAirSurveillance DownlinkFormat = 0
 	// DownlinkFormatAltitudeReply is Altitude reply => message size: 56 bits.
@@ -103,29 +72,68 @@ const (
 	DownlinkFormatCommBWithIdentityReply DownlinkFormat = 21
 	// DownlinkFormatCommDExtendedLengthMessage is Comm-D, extended length message => message size: 112 bits.
 	DownlinkFormatCommDExtendedLengthMessage DownlinkFormat = 24
+
+	// ErrUnsupportedFormat is when the mode-s format is not supported.
+	ErrUnsupportedFormat localerrors.Error = "unsupported  format"
+
+	// ErrWrongCRC is when a wrong CRC was encountered.
+	ErrWrongCRC localerrors.Error = "wrong CRC"
 )
 
 // ModeS is a ModeS frame.
-type ModeS struct {
-	DownlinkFormat     DownlinkFormat
-	ParityInterrogator uint32
-	Raw                []byte
+type ModeS []byte
+
+// DownlinkFormat is the DF.
+func (m ModeS) DownlinkFormat() DownlinkFormat {
+	return DownlinkFormat((m[0] & 0xf8) >> 3) //nolint: gomnd
 }
 
-// UnmarshalModeS is the mode-S unmarshaler.
-func (m *ModeS) UnmarshalModeS(data []byte) error {
-	if len(data) < 4 { //nolint: gomnd
-		return ErrWrongMessageSize
+// ParityInterrogator is the Parity.
+func (m ModeS) ParityInterrogator() uint32 {
+	length := len(m)
+
+	return (uint32(m[length-3]) << 16) + (uint32(m[length-2]) << 8) + //nolint: gomnd
+		uint32(m[length-1])
+}
+
+// Squitter is the squitter message.
+func (m ModeS) Squitter() (Squitter, error) { //nolint: ireturn
+	downlinkFormat := m.DownlinkFormat()
+
+	if (downlinkFormat == DownlinkFormatLongAirAirSurveillance ||
+		downlinkFormat == DownlinkFormatExtendedSquitter ||
+		downlinkFormat == DownlinkFormatExtendedSquitterNonTransponder ||
+		downlinkFormat == DownlinkFormatMilitaryExtendedSquitter ||
+		downlinkFormat == DownlinkFormatCommBWithAltitudeReply ||
+		downlinkFormat == DownlinkFormatCommBWithIdentityReply ||
+		downlinkFormat == DownlinkFormatCommDExtendedLengthMessage) &&
+		len(m) == extendedSquitterBitLength/8 {
+		return ExtendedSquitter{ModeS: m}, nil
 	}
 
-	length := len(data)
+	if (downlinkFormat == DownlinkFormatShortAirAirSurveillance ||
+		downlinkFormat == DownlinkFormatAltitudeReply ||
+		downlinkFormat == DownlinkFormatIdentityReply ||
+		downlinkFormat == DownlinkFormatAllCallReply) &&
+		len(m) == shortSquitterBitLength/8 {
+		return ShortSquitter{ModeS: m}, nil
+	}
 
-	m.DownlinkFormat = DownlinkFormat((data[0] & 0xf8) >> 3) //nolint: gomnd
+	return nil, errors.Wrap(ErrUnsupportedFormat, fmt.Sprintf("DF:%d / len:%d / %s", downlinkFormat, len(m), m))
+}
 
-	m.Raw = data
+// CheckSum checks the integrity of the message.
+func (m ModeS) CheckSum() error {
+	remainder := binary.ChecksumSquitter(m[:len(m)-3])
 
-	m.ParityInterrogator = (uint32(data[length-3]) << 16) + (uint32(data[length-2]) << 8) + //nolint: gomnd
-		uint32(data[length-1])
+	if remainder != m.ParityInterrogator() {
+		return ErrWrongCRC
+	}
 
 	return nil
+}
+
+// String implements the Stringer interface.
+func (m ModeS) String() string {
+	return strings.ToUpper(hex.EncodeToString(m))
 }

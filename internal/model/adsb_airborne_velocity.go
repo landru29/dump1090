@@ -8,14 +8,14 @@ package model
 //       ┃ 5  |  3 |  1 |  1  |  3  |  22 |   1   |  1  | 9  |  2  |  1   |  7   ┃
 //       ┗━━━━┷━━━━┷━━━━┷━━━━━┷━━━━━┷━━━━━┷━━━━━━━┷━━━━━┷━━━━┷━━━━━┷━━━━━━┷━━━━━━┛
 
-// AirborneVelocity is the airborne velocity.
-type AirborneVelocity struct{}
+const airborneVelocityName = "airborne velocity"
 
-// AirborneVelocity is the airborne velocity of the aircraft.
-func (e ExtendedSquitter) AirborneVelocity() (*AirborneVelocity, error) {
-	if e.Type != MessageTypeAirborneVelocities {
-		return nil, ErrWrongMessageType
-	}
+// AirborneVelocity is the surface position.
+type AirborneVelocity struct {
+	ExtendedSquitter
+}
 
-	return &AirborneVelocity{}, nil
+// Name implements the Message interface.
+func (s AirborneVelocity) Name() string {
+	return airborneVelocityName
 }

@@ -1,4 +1,4 @@
-package adsbmodel
+package model
 
 import (
 	"math"

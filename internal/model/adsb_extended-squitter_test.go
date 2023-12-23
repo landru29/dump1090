@@ -1,11 +1,11 @@
 package model_test
 
 import (
-	"bufio"
 	"encoding/csv"
 	"encoding/hex"
 	"io"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/landru29/dump1090/internal/model"
@@ -22,16 +22,19 @@ func TestUnmarshal(t *testing.T) {
 		dataByte, err := hex.DecodeString("8D4840D6202CC371C32CE0576098")
 		require.NoError(t, err)
 
-		msg := model.ExtendedSquitter{}
+		require.NoError(t, model.ModeS(dataByte).CheckSum())
 
-		require.NoError(t, msg.UnmarshalModeS(dataByte))
+		squitter, err := model.ModeS(dataByte).Squitter()
+		require.NoError(t, err)
 
-		assert.Equal(t, model.DownlinkFormat(17), msg.ModeS.DownlinkFormat)
-		assert.Equal(t, byte(5), msg.TransponderCapability)
-		assert.Equal(t, model.ICAOAddr(4735190), msg.AircraftAddress)
-		assert.Equal(t, model.TypeCode(0x04), msg.TypeCode)
-		assert.Equal(t, uint32(0x576098), msg.ModeS.ParityInterrogator)
-		assert.Len(t, msg.Message, 56/8)
+		require.Equal(t, "extended squitter", squitter.Name())
+
+		extendedSquitter, ok := squitter.(model.ExtendedSquitter)
+		assert.True(t, ok)
+
+		assert.Equal(t, model.DownlinkFormat(17), extendedSquitter.DownlinkFormat())
+		assert.Equal(t, model.TransponderCapabilityAirborne, extendedSquitter.TransponderCapability())
+		assert.Equal(t, model.ICAOAddr(4735190), extendedSquitter.AircraftAddress())
 	})
 
 	t.Run("any ADS-B message", func(t *testing.T) {
@@ -51,35 +54,27 @@ func TestUnmarshal(t *testing.T) {
 
 		for _, record := range records {
 			msgStr := record[1]
+
+			addrStr := record[2]
+
 			t.Run(msgStr, func(t *testing.T) {
 				dataByte, err := hex.DecodeString(msgStr)
 				require.NoError(t, err)
 
-				msg := model.ExtendedSquitter{}
-
-				require.NoError(t, msg.UnmarshalModeS(dataByte))
-			})
-		}
-	})
-
-	t.Run("from Dump1090", func(t *testing.T) {
-		t.Parallel()
-
-		file, err := os.Open("testdata/dump1090.txt")
-		require.NoError(t, err)
-
-		scanner := bufio.NewScanner(file)
-		// optionally, resize scanner's capacity for lines over 64K, see next example
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			t.Run(line, func(t *testing.T) {
-				dataByte, err := hex.DecodeString(line[1 : len(line)-1])
+				icaoAddr, err := strconv.ParseUint(addrStr, 16, 64)
 				require.NoError(t, err)
 
-				modeS := &model.ModeS{}
+				require.NoError(t, model.ModeS(dataByte).CheckSum())
 
-				require.NoError(t, modeS.UnmarshalModeS(dataByte))
+				squitter, err := model.ModeS(dataByte).Squitter()
+				require.NoError(t, err)
+
+				require.Equal(t, "extended squitter", squitter.Name())
+
+				extendedSquitter, ok := squitter.(model.ExtendedSquitter)
+				assert.True(t, ok)
+
+				assert.Equal(t, model.ICAOAddr(icaoAddr), extendedSquitter.AircraftAddress())
 			})
 		}
 	})

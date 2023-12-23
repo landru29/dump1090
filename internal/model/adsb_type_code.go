@@ -1,4 +1,4 @@
-package adsbmodel
+package model
 
 const (
 	// TypeCodeAircraftIdentification is the aircraft identification Type Code.

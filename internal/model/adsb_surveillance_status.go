@@ -1,4 +1,4 @@
-package adsbmodel
+package model
 
 // SurveillanceStatus is the surveillance status.
 type SurveillanceStatus byte

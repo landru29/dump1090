@@ -16,14 +16,14 @@ package model
 //                  ┃ 16  | 16 |  3  |  1   |  4   |  2  |  2  |  1  |  1  |  2  ┃
 //                  ┗━━━━━┷━━━━┷━━━━━┷━━━━━━┷━━━━━━┷━━━━━┷━━━━━┷━━━━━┷━━━━━┷━━━━━┛
 
+const operationStatusName = "operation status"
+
 // OperationStatus is the operation status.
-type OperationStatus struct{}
+type OperationStatus struct {
+	ExtendedSquitter
+}
 
-// OperationStatus is the operation status of the aircraft.
-func (e ExtendedSquitter) OperationStatus() (*OperationStatus, error) {
-	if e.Type != MessageTypeAircraftOperationStatus {
-		return nil, ErrWrongMessageType
-	}
-
-	return &OperationStatus{}, nil
+// Name implements the Message interface.
+func (o OperationStatus) Name() string {
+	return operationStatusName
 }

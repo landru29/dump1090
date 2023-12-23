@@ -8,38 +8,42 @@ package model
 //       ┃ 5  |  3 |  6 |  6 |  6 |  6 |  6 |  6 |  6 |  6 ┃
 //       ┗━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┷━━━━┛
 
-const asciiTable = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ##### ###############0123456789######"
+const (
+	asciiTable         = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ##### ###############0123456789######"
+	identificationName = "identification"
+)
+
+// Category is the aircraft category.
+type Category byte
 
 // Identification id the aircraft identification.
 type Identification struct {
-	Category byte
-	String   string
+	ExtendedSquitter
 }
 
-// Identification is the aircraft identification.
-func (e ExtendedSquitter) Identification() (*Identification, error) {
-	if e.Type != MessageTypeAircraftIdentification {
-		return nil, ErrWrongMessageType
-	}
-
-	//     1     //      2    //      3    //      4    //      5    //    6
-	// 876543 21 // 8765 4321 // 87 654321 // 876543 21 // 8765 4321 // 87 654321
-	// \----/ \--------/ \--------/ \----/    \----/ \--------/ \--------/ \----/
-	//    0        1          2        3         4        5         6         7
-
+// String implement the Stringer interface.
+func (i Identification) String() string {
+	message := i.Message()
 	letters := make([]byte, 8) //nolint: gomnd
 
-	letters[0] = asciiTable[e.Message[1]>>2]
-	letters[1] = asciiTable[(e.Message[1]&0x3)<<4+e.Message[2]>>4] //nolint: gomnd
-	letters[2] = asciiTable[(e.Message[2]&0xf)<<2+e.Message[3]>>6] //nolint: gomnd
-	letters[3] = asciiTable[e.Message[3]&0x3f]
-	letters[4] = asciiTable[e.Message[4]>>2]
-	letters[5] = asciiTable[(e.Message[4]&0x3)<<4+e.Message[5]>>4] //nolint: gomnd
-	letters[6] = asciiTable[(e.Message[5]&0xf)<<2+e.Message[6]>>6] //nolint: gomnd
-	letters[7] = asciiTable[e.Message[6]&0x3f]
+	letters[0] = asciiTable[message[1]>>2]
+	letters[1] = asciiTable[(message[1]&0x3)<<4+message[2]>>4] //nolint: gomnd
+	letters[2] = asciiTable[(message[2]&0xf)<<2+message[3]>>6] //nolint: gomnd
+	letters[3] = asciiTable[message[3]&0x3f]
+	letters[4] = asciiTable[message[4]>>2]
+	letters[5] = asciiTable[(message[4]&0x3)<<4+message[5]>>4] //nolint: gomnd
+	letters[6] = asciiTable[(message[5]&0xf)<<2+message[6]>>6] //nolint: gomnd
+	letters[7] = asciiTable[message[6]&0x3f]
 
-	return &Identification{
-		Category: e.Message[0] & 0x7, //nolint: gomnd
-		String:   string(letters),
-	}, nil
+	return string(letters)
+}
+
+// Name implements the Message interface.
+func (i Identification) Name() string {
+	return identificationName
+}
+
+// Category is the aircraft category.
+func (i Identification) Category() Category {
+	return Category(i.Message()[0] & 0x7) //nolint: gomnd
 }

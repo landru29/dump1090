@@ -15,6 +15,11 @@ type SurfacePosition struct {
 	ExtendedSquitter
 }
 
+// DecodePosition decodes the current position with another frame.
+func (p SurfacePosition) DecodePosition(other SurfacePosition) (*Position, error) {
+	return DecodePosition(p, other)
+}
+
 // Name implements the Message interface.
 func (p SurfacePosition) Name() string {
 	return surfacePositionName

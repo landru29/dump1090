@@ -42,6 +42,10 @@ issues:
         - dupl
         - varnamelen
 
+    - path: internal/compactposition/.*\.go
+      linters:
+        - gomnd
+
     - path: internal/processor/.*\.go
       linters:
         - misspell

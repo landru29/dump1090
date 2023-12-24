@@ -9,11 +9,18 @@ package model
 //       ┃   5   |  2 |  1  |  12 | 1 | 1 |    17   |   17    ┃
 //       ┗━━━━━━━┷━━━━┷━━━━━┷━━━━━┷━━━┷━━━┷━━━━━━━━━┷━━━━━━━━━┛
 
-const airbornePositionName = "airborne position"
+const (
+	airbornePositionName = "airborne position"
+)
 
 // AirbornePosition is the surface position.
 type AirbornePosition struct {
 	ExtendedSquitter
+}
+
+// DecodePosition decodes the current position with another frame.
+func (p AirbornePosition) DecodePosition(other AirbornePosition) (*Position, error) {
+	return DecodePosition(p, other)
 }
 
 // Name implements the Message interface.

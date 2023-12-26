@@ -7,7 +7,6 @@ import (
 
 	"github.com/landru29/dump1090/internal/binary"
 	localerrors "github.com/landru29/dump1090/internal/errors"
-	"github.com/pkg/errors"
 )
 
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -119,7 +118,7 @@ func (m ModeS) Squitter() (Squitter, error) { //nolint: ireturn
 		return ShortSquitter{ModeS: m}, nil
 	}
 
-	return nil, errors.Wrap(ErrUnsupportedFormat, fmt.Sprintf("DF:%d / len:%d / %s", downlinkFormat, len(m), m))
+	return nil, fmt.Errorf("DF:%d / len:%d / msg:%s / err:%w", downlinkFormat, len(m), m, ErrUnsupportedFormat)
 }
 
 // CheckSum checks the integrity of the message.

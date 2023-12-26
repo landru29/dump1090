@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/landru29/dump1090/internal/mocks"
+	"github.com/landru29/dump1090/internal/processor"
 	"github.com/landru29/dump1090/internal/source/rtl28xxx"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -30,7 +31,7 @@ func TestReader(t *testing.T) {
 		require.NoError(t, closer.Close())
 	}(file)
 
-	reader := rtl28xxx.NewReader(file, mockProcessor)
+	reader := rtl28xxx.NewReader(file, []processor.Processer{mockProcessor})
 	require.NotNil(t, reader)
 
 	require.NoError(t, reader.Start(context.Background()))

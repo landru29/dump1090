@@ -45,7 +45,7 @@ uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength
         startIdx = currentCtx->remainingMagnitudeLengthByte / sizeof(uint16_t);
     }
 
-    // computes magnitudes
+    // computes magnitudes.
     for(int idx = 0; idx<byteBufferLength/IQ_SIZE; idx++) {
         int i = byteBuffer[idx*IQ_SIZE];
         int q = byteBuffer[idx*IQ_SIZE+1];
@@ -175,9 +175,12 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
             printf("\n\n");
         }
 
+        // The preambule seems to be right, prepare the message variable.
         memset(message, 0, 14);
 
-        int startOfMessage = idx+16; // skip the preambule of 8µs
+        // skip the preambule of 8µs.
+        int startOfMessage = idx+16; 
+
         int messageLength = MODES_SHORT_MSG_BITS;
 
         // +----------+--------------+-----------+
@@ -190,21 +193,21 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
 
             unsigned char bit = (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1]);
 
+            // If the first bit of DF is 1, this means the message will be long 112 bits (extended squitter),
+            // otherwise, the message will be short 56 bits (normal squitter).
             if ((index==0) && (bit==1)) {
                 messageLength = MODES_LONG_MSG_BITS;
-                // If the first bit of DF is 1, this means the message will be long 112 bits
-                // otherwise, the message will be short 56 bits
             }
 
             message[byteIndex] |= bit << bitIndex;
         }
 
-        // jump over the message
         if (!RAW) {
-            goRtlsrdData(message, messageLength / 8, ctx);
-
-            // jump over the message
-            idx += startOfMessage + messageLength *2;
+            // No error ?
+            if (goRtlsrdData(message, messageLength / 8, ctx) == 0) {
+                // jump over the message.
+                idx += startOfMessage + messageLength *2;
+            } 
         }
     }
 

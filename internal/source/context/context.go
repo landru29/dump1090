@@ -42,7 +42,7 @@ type Context struct {
 const randomLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // New creates a C Context with a processor
-func New(ctx context.Context, processor processor.Processer) *Context { //nolint: contextcheck
+func New(ctx context.Context, processor []processor.Processer) *Context { //nolint: contextcheck
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -94,8 +94,8 @@ func FromPtr(ptr unsafe.Pointer) context.Context {
 } //nolint: ireturn,nolintlint
 
 // Processor gets the processor from the context.
-func Processor(ctx context.Context) processor.Processer { //nolint: ireturn,nolintlint
-	return ctx.Value(deviceInContext{}).(processor.Processer) //nolint: forcetypeassert
+func Processor(ctx context.Context) []processor.Processer { //nolint: ireturn,nolintlint
+	return ctx.Value(deviceInContext{}).([]processor.Processer) //nolint: forcetypeassert
 }
 
 // DisposeContext Garbage collect the context.

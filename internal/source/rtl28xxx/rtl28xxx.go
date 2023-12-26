@@ -29,8 +29,8 @@ type Source struct {
 	gain        float64
 	enableAGC   bool
 
-	processor processor.Processer
-	dev       *Device
+	processors []processor.Processer
+	dev        *Device
 }
 
 // New creates a new data source process.
@@ -62,7 +62,7 @@ func (s *Source) Start(ctx context.Context) error {
 		deviceIndex = s.deviceIndex
 	}
 
-	device, err := OpenDevice(deviceIndex, s.processor)
+	device, err := OpenDevice(deviceIndex, s.processors)
 	if err != nil {
 		return err
 	}

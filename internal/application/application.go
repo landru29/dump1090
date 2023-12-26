@@ -3,10 +3,10 @@ package application
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/landru29/dump1090/internal/processor"
-	"github.com/landru29/dump1090/internal/processor/decoder"
 	"github.com/landru29/dump1090/internal/source"
 	"github.com/landru29/dump1090/internal/source/rtl28xxx"
 	"github.com/landru29/dump1090/internal/transport"
@@ -26,13 +26,12 @@ type Config struct {
 // App is the main application.
 type App struct {
 	starter source.Starter
+	log     *slog.Logger
 }
 
 // New creates a new application.
-func New(ctx context.Context, cfg *Config, _ []transport.Transporter) (*App, error) {
+func New(ctx context.Context, log *slog.Logger, cfg *Config, processors []processor.Processer, _ []transport.Transporter) (*App, error) {
 	output := &App{}
-
-	var processor processor.Processer = decoder.New(ctx, cfg.DatabaseLifetime)
 
 	if cfg.FixturesFilename != "" {
 		opts := []rtl28xxx.FileConfigurator{}
@@ -40,7 +39,7 @@ func New(ctx context.Context, cfg *Config, _ []transport.Transporter) (*App, err
 			opts = append(opts, rtl28xxx.WithLoop())
 		}
 
-		output.starter = rtl28xxx.NewFile(cfg.FixturesFilename, processor, opts...)
+		output.starter = rtl28xxx.NewFile(cfg.FixturesFilename, processors, opts...)
 
 		return output, nil
 	}

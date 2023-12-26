@@ -9,7 +9,7 @@
 extern int messageLengthBit[25];
 extern uint16_t magnitude[129*129];
 
-extern void goRtlsrdData(unsigned char *buf, uint32_t len, void *ctx);
+extern int goRtlsrdData(unsigned char *buf, uint32_t len, void *ctx);
 
 int rtlsdrReadAsync(rtlsdr_dev_t *dev, void *ctx, uint32_t buf_num, uint32_t buf_len);
 void rtlsdrProcessRaw(unsigned char *buf, uint32_t len, void *ctx);

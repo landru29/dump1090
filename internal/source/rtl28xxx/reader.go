@@ -13,20 +13,20 @@ import (
 type Reader struct {
 	reader io.Reader
 
-	processor processor.Processer
+	processors []processor.Processer
 }
 
 // NewReader creates a new device reader.
-func NewReader(rd io.Reader, processor processor.Processer) *Reader {
+func NewReader(rd io.Reader, processors []processor.Processer) *Reader {
 	return &Reader{
-		reader:    rd,
-		processor: processor,
+		reader:     rd,
+		processors: processors,
 	}
 }
 
 // Start implements the source.Starter interface.
 func (r *Reader) Start(ctx context.Context) error {
-	cContext := localcontext.New(ctx, r.processor)
+	cContext := localcontext.New(ctx, r.processors)
 
 	defer func() {
 		localcontext.DisposeContext(cContext.Key)

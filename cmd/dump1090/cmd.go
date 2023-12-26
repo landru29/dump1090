@@ -3,10 +3,14 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/landru29/dump1090/cmd/logger"
 	"github.com/landru29/dump1090/internal/application"
+	"github.com/landru29/dump1090/internal/processor"
+	"github.com/landru29/dump1090/internal/processor/decoder"
 	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/landru29/dump1090/internal/serialize/basestation"
 	"github.com/landru29/dump1090/internal/serialize/json"
@@ -50,6 +54,12 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
+			log := slog.New(slog.NewTextHandler(cmd.OutOrStdout(), nil))
+
+			ctx := logger.WithLogger(cmd.Context(), log)
+
+			cmd.SetContext(ctx)
+
 			serializers := map[string]serialize.Serializer{}
 
 			vesselType, ok := map[string]nmea.VesselType{
@@ -75,7 +85,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 			transporters := []transport.Transporter{}
 
 			if httpConf.addr != "" {
-				httpTransport, err := http.New(cmd.Context(), httpConf.addr, httpConf.apiPath, availableSerializers)
+				httpTransport, err := http.New(ctx, httpConf.addr, httpConf.apiPath, availableSerializers)
 				if err != nil {
 					return err
 				}
@@ -85,7 +95,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 			}
 
 			if udpConf.IsValid() {
-				udpTransport, err := net.New(cmd.Context(), serializers, udpConf, cmd.OutOrStdout())
+				udpTransport, err := net.New(ctx, serializers, udpConf, cmd.OutOrStdout())
 				if err != nil {
 					return err
 				}
@@ -93,7 +103,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 			}
 
 			if tcpConf.IsValid() {
-				tcpTransport, err := net.New(cmd.Context(), serializers, tcpConf, cmd.OutOrStdout())
+				tcpTransport, err := net.New(ctx, serializers, tcpConf, cmd.OutOrStdout())
 				if err != nil {
 					return err
 				}
@@ -112,7 +122,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 			if transportFile != "" {
 				splitter := strings.Split(transportFile, "@")
 				if len(splitter) > 1 {
-					fileTransport, err := file.New(cmd.Context(), strings.Join(splitter[1:], "@"), serializers[splitter[0]])
+					fileTransport, err := file.New(ctx, strings.Join(splitter[1:], "@"), serializers[splitter[0]])
 					if err != nil {
 						return err
 					}
@@ -125,16 +135,32 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 				transporters = append(transporters, screen.Transporter{})
 			}
 
-			app, err = application.New(cmd.Context(), &config, transporters)
+			app, err = application.New(
+				ctx,
+				log,
+				&config,
+				[]processor.Processer{
+					decoder.New(
+						ctx,
+						log,
+						decoder.WithDatabaseLifetime(config.DatabaseLifetime),
+						// decoder.WithChecksumCheck(),
+					),
+					// raw.New(log),
+				},
+				transporters,
+			)
 
 			return err
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := app.Start(cmd.Context()); err != nil {
+			ctx := cmd.Context()
+
+			if err := app.Start(ctx); err != nil {
 				return err
 			}
 
-			<-cmd.Context().Done()
+			<-ctx.Done()
 
 			return nil
 		},

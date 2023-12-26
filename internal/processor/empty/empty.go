@@ -1,7 +1,7 @@
 // Package empty is an empty processor.
 package empty
 
-// New creates a ampty processor.
+// New creates an empty processor.
 func New() *Processor {
 	return &Processor{}
 }

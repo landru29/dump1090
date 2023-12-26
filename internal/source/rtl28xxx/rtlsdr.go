@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/landru29/dump1090/cmd/logger"
 	"github.com/landru29/dump1090/internal/processor"
 	localcontext "github.com/landru29/dump1090/internal/source/context"
 )
@@ -23,8 +24,8 @@ func init() { //nolint: gochecknoinits
 
 // Device is a RTL-SDR device.
 type Device struct {
-	dev       *C.rtlsdr_dev_t
-	processor processor.Processer
+	dev        *C.rtlsdr_dev_t
+	processors []processor.Processer
 }
 
 // InitTables generates tables for data extract.
@@ -57,10 +58,10 @@ func DeviceUsbStrings(index uint32) (string, string, string, error) {
 }
 
 // OpenDevice opens the device.
-func OpenDevice(index uint32, processor processor.Processer) (*Device, error) {
+func OpenDevice(index uint32, processors []processor.Processer) (*Device, error) {
 	output := Device{
 		// dev:       &C.rtlsdr_dev_t{},
-		processor: processor,
+		processors: processors,
 	}
 
 	if intErr := C.rtlsdr_open(&output.dev, C.uint32_t(index)); intErr != 0 { //nolint: gocritic,nlreturn
@@ -191,7 +192,7 @@ func (d *Device) ResetBuffer() error {
 // ReadAsync reads samples from the device asynchronously. This function will block until
 // it is being canceled using rtlsdr_cancel_async()
 func (d *Device) ReadAsync(ctx context.Context, bufNum uint32, bufLen uint32) error {
-	if intErr := C.rtlsdrReadAsync(d.dev, localcontext.New(ctx, d.processor).Ccontext, C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
+	if intErr := C.rtlsdrReadAsync(d.dev, localcontext.New(ctx, d.processors).Ccontext, C.uint32_t(bufNum), C.uint32_t(bufLen)); intErr != 0 { //nolint: gomnd,nlreturn,nolintlint,lll
 		return fmt.Errorf("RtlsdrReadAsync: %d", intErr)
 	}
 
@@ -207,13 +208,22 @@ func processRaw(data []byte, cContext unsafe.Pointer) {
 }
 
 //export goRtlsrdData
-func goRtlsrdData(buf *C.uchar, length C.uint32_t, cCtx *C.void) {
+func goRtlsrdData(buf *C.uchar, length C.uint32_t, cCtx *C.void) C.int {
 	ctx := localcontext.FromPtr(unsafe.Pointer(cCtx))
-	processor := localcontext.Processor(ctx)
+	processors := localcontext.Processor(ctx)
 
 	mySlice := C.GoBytes(unsafe.Pointer(buf), C.int(length)) //nolint: nlreturn
 
-	if err := processor.Process(mySlice); err != nil {
-		fmt.Printf("ERROR: %s\n", err) //nolint: forbidigo
+	for _, processor := range processors {
+		if err := processor.Process(mySlice); err != nil {
+			log, found := logger.Logger(ctx)
+			if found {
+				log.Error("process data", "msg", err)
+			}
+
+			return -1
+		}
 	}
+
+	return 0
 }

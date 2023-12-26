@@ -14,17 +14,17 @@ type SourceFile struct {
 	filename string
 	loop     bool
 
-	processor processor.Processer
+	processors []processor.Processer
 }
 
 // FileConfigurator is the Source configurator.
 type FileConfigurator func(*SourceFile)
 
 // NewFile creates a new data source process.
-func NewFile(filename string, processor processor.Processer, opts ...FileConfigurator) *SourceFile {
+func NewFile(filename string, processors []processor.Processer, opts ...FileConfigurator) *SourceFile {
 	output := &SourceFile{
-		filename:  filename,
-		processor: processor,
+		filename:   filename,
+		processors: processors,
 	}
 
 	for _, opt := range opts {
@@ -73,5 +73,5 @@ func (s *SourceFile) start(ctx context.Context) error {
 		_ = closer.Close()
 	}(fileDescriptor)
 
-	return NewReader(fileDescriptor, s.processor).Start(ctx)
+	return NewReader(fileDescriptor, s.processors).Start(ctx)
 }

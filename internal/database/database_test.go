@@ -29,6 +29,27 @@ func TestDatabase(t *testing.T) {
 		assert.Empty(t, storage.Keys())
 	})
 
+	t.Run("chain elements", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+
+		storage := database.New[string, float64](
+			ctx,
+			database.WithLifetime[string, float64](time.Second*3000),
+			database.WithCleanCycle[string, float64](time.Second*3000),
+		)
+
+		storage.Add("42", 42.0)
+		storage.Add("42", 24.0)
+		storage.Add("24", 42.0)
+
+		assert.Len(t, storage.Keys(), 2)
+
+		assert.Len(t, storage.Elements("42"), 2)
+		assert.Len(t, storage.Elements("24"), 1)
+	})
+
 	t.Run("add elements", func(t *testing.T) {
 		t.Parallel()
 
@@ -37,7 +58,7 @@ func TestDatabase(t *testing.T) {
 		storage := database.New[string, float64](
 			ctx,
 			database.WithLifetime[string, float64](time.Millisecond*100),
-			database.WithCleanCycle[string, float64](time.Millisecond*30),
+			database.WithCleanCycle[string, float64](time.Millisecond*130),
 		)
 
 		storage.Add("42", 42.0)

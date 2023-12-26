@@ -30,8 +30,16 @@ type App struct {
 }
 
 // New creates a new application.
-func New(ctx context.Context, log *slog.Logger, cfg *Config, processors []processor.Processer, _ []transport.Transporter) (*App, error) {
-	output := &App{}
+func New(
+	_ context.Context,
+	log *slog.Logger,
+	cfg *Config,
+	processors []processor.Processer,
+	_ []transport.Transporter,
+) (*App, error) {
+	output := &App{
+		log: log,
+	}
 
 	if cfg.FixturesFilename != "" {
 		opts := []rtl28xxx.FileConfigurator{}
@@ -71,5 +79,7 @@ func New(ctx context.Context, log *slog.Logger, cfg *Config, processors []proces
 
 // Start is the application entrypoint.
 func (a *App) Start(ctx context.Context) error {
+	a.log.Info("Starting application")
+
 	return a.starter.Start(ctx)
 }

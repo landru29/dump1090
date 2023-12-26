@@ -4,8 +4,30 @@ import "time"
 
 // Element is a database element.
 type Element[T any] struct {
-	date time.Time
-	data T
+	date     time.Time
+	data     T
+	next     *Element[T]
+	previous *Element[T]
+}
+
+// Last is the last Element of the chain.
+func (e *Element[T]) Last() *Element[T] {
+	output := e
+	for output.next != nil {
+		output = output.next
+	}
+
+	return output
+}
+
+// Root is the first Element of the chain.
+func (e Element[T]) Root() *Element[T] {
+	output := &e
+	for e.previous != nil {
+		output = e.previous
+	}
+
+	return output
 }
 
 // NewElement creates a new element.

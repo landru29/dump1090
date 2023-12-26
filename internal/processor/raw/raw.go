@@ -20,5 +20,6 @@ type Processor struct {
 // Process implements the Processer interface.
 func (e Processor) Process(data []byte) error {
 	e.log.Info("New message", "data", strings.ToUpper(hex.EncodeToString(data)))
+
 	return nil
 }

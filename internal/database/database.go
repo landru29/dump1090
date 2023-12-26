@@ -14,7 +14,7 @@ const (
 
 // Storage is the database storage.
 type Storage[K comparable, T any] struct {
-	data       map[K][]Element[T]
+	data       map[K]*Element[T]
 	timer      *time.Ticker
 	mutex      sync.Mutex
 	lifetime   time.Duration
@@ -24,7 +24,7 @@ type Storage[K comparable, T any] struct {
 // New initialize a storage.
 func New[K comparable, T any](ctx context.Context, opts ...Configurator[K, T]) *Storage[K, T] {
 	out := &Storage[K, T]{
-		data:       map[K][]Element[T]{},
+		data:       map[K]*Element[T]{},
 		lifetime:   defaultLifetime,
 		cleanCycle: defaultCleanCycle,
 	}
@@ -56,20 +56,25 @@ func (s *Storage[K, T]) Clean() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for key, list := range s.data {
-		newLst := []Element[T]{}
+	for key, chain := range s.data {
+		current := chain.Last()
 
-		for _, elt := range list {
-			if !elt.expired(s.lifetime) {
-				newLst = append(newLst, elt)
-			}
+		for current != nil && !current.expired(s.lifetime) {
+			current = current.previous
 		}
 
-		s.data[key] = newLst
-
-		if len(s.data[key]) == 0 {
-			delete(s.data, key)
+		if current == nil {
+			continue
 		}
+
+		if current.next != nil {
+			current.next.previous = nil
+			s.data[key] = current.next
+
+			continue
+		}
+
+		delete(s.data, key)
 	}
 }
 
@@ -78,14 +83,22 @@ func (s *Storage[K, T]) Add(key K, element T) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	list, found := s.data[key]
-	if !found {
-		list = []Element[T]{}
+	chain, found := s.data[key]
+	if found {
+		last := chain.Last()
+		last.next = &Element[T]{
+			previous: last,
+			data:     element,
+			date:     time.Now(),
+		}
+
+		return
 	}
 
-	list = append(list, NewElement[T](element))
-
-	s.data[key] = list
+	s.data[key] = &Element[T]{
+		data: element,
+		date: time.Now(),
+	}
 }
 
 // Keys list the available keys.
@@ -112,10 +125,12 @@ func (s *Storage[K, T]) Elements(key K) []T {
 	defer s.mutex.Unlock()
 
 	if elements, found := s.data[key]; found {
-		out := make([]T, len(elements))
+		out := []T{elements.data}
 
-		for idx, elt := range elements {
-			out[idx] = elt.Data()
+		for elements.next != nil {
+			out = append(out, elements.data)
+
+			elements = elements.next
 		}
 
 		return out

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDatabase(t *testing.T) {
+func TestChainedStorage(t *testing.T) {
 	t.Parallel()
 
 	t.Run("new database", func(t *testing.T) {
@@ -18,11 +18,15 @@ func TestDatabase(t *testing.T) {
 
 		ctx := context.Background()
 
-		storage := database.New[string, float64](
+		storage := database.NewChainedStorage[string, float64](
 			ctx,
-			database.WithLifetime[string, float64](time.Millisecond*100),
-			database.WithCleanCycle[string, float64](time.Millisecond*30),
+			database.ChainedWithLifetime[string, float64](time.Millisecond*100),
+			database.ChainedWithCleanCycle[string, float64](time.Millisecond*30),
 		)
+
+		t.Cleanup(func() {
+			require.NoError(t, storage.Close())
+		})
 
 		time.Sleep(time.Millisecond * 500)
 
@@ -34,11 +38,15 @@ func TestDatabase(t *testing.T) {
 
 		ctx := context.Background()
 
-		storage := database.New[string, float64](
+		storage := database.NewChainedStorage[string, float64](
 			ctx,
-			database.WithLifetime[string, float64](time.Second*3000),
-			database.WithCleanCycle[string, float64](time.Second*3000),
+			database.ChainedWithLifetime[string, float64](time.Second*3000),
+			database.ChainedWithCleanCycle[string, float64](time.Second*3000),
 		)
+
+		t.Cleanup(func() {
+			require.NoError(t, storage.Close())
+		})
 
 		storage.Add("42", 42.0)
 		storage.Add("42", 24.0)
@@ -55,11 +63,15 @@ func TestDatabase(t *testing.T) {
 
 		ctx := context.Background()
 
-		storage := database.New[string, float64](
+		storage := database.NewChainedStorage[string, float64](
 			ctx,
-			database.WithLifetime[string, float64](time.Millisecond*100),
-			database.WithCleanCycle[string, float64](time.Millisecond*130),
+			database.ChainedWithLifetime[string, float64](time.Millisecond*100),
+			database.ChainedWithCleanCycle[string, float64](time.Millisecond*130),
 		)
+
+		t.Cleanup(func() {
+			require.NoError(t, storage.Close())
+		})
 
 		storage.Add("42", 42.0)
 		storage.Add("42", 24.0)
@@ -77,11 +89,15 @@ func TestDatabase(t *testing.T) {
 
 		ctx := context.Background()
 
-		storage := database.New[string, float64](
+		storage := database.NewChainedStorage[string, float64](
 			ctx,
-			database.WithLifetime[string, float64](time.Millisecond*100),
-			database.WithCleanCycle[string, float64](time.Millisecond*30),
+			database.ChainedWithLifetime[string, float64](time.Millisecond*100),
+			database.ChainedWithCleanCycle[string, float64](time.Millisecond*30),
 		)
+
+		t.Cleanup(func() {
+			require.NoError(t, storage.Close())
+		})
 
 		storage.Add("42", 42.0)
 		storage.Add("24", 42.0)
@@ -106,11 +122,15 @@ func TestDatabase(t *testing.T) {
 
 		cancel()
 
-		storage := database.New[string, float64](
+		storage := database.NewChainedStorage[string, float64](
 			ctx,
-			database.WithLifetime[string, float64](time.Millisecond*100),
-			database.WithCleanCycle[string, float64](time.Millisecond*30),
+			database.ChainedWithLifetime[string, float64](time.Millisecond*100),
+			database.ChainedWithCleanCycle[string, float64](time.Millisecond*30),
 		)
+
+		t.Cleanup(func() {
+			require.NoError(t, storage.Close())
+		})
 
 		storage.Add("42", 42.0)
 		storage.Add("42", 24.0)

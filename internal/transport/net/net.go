@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	localerrors "github.com/landru29/dump1090/internal/errors"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/landru29/dump1090/internal/serialize"
-	"github.com/landru29/dump1090/internal/source"
 	"github.com/pkg/errors"
 )
 
@@ -130,7 +130,7 @@ func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string,
 }
 
 // Transport implements the transport.Transporter interface.
-func (t *Transporter) Transport(ac *source.Aircraft) error {
+func (t *Transporter) Transport(ac *model.Aircraft) error {
 	data, err := t.formater.Serialize(ac)
 	if err != nil {
 		return err

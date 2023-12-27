@@ -4,8 +4,8 @@ package screen
 import (
 	"fmt"
 
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/landru29/dump1090/internal/serialize"
-	"github.com/landru29/dump1090/internal/source"
 )
 
 // Transporter is the screen transporter.
@@ -14,7 +14,7 @@ type Transporter struct {
 }
 
 // Transport implements the transport.Transporter interface.
-func (t Transporter) Transport(ac *source.Aircraft) error {
+func (t Transporter) Transport(ac *model.Aircraft) error {
 	data, err := t.serializer.Serialize(ac)
 	if err != nil {
 		return err

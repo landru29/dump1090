@@ -9,6 +9,8 @@ import (
 
 	"github.com/landru29/dump1090/cmd/logger"
 	"github.com/landru29/dump1090/internal/application"
+	"github.com/landru29/dump1090/internal/database"
+	"github.com/landru29/dump1090/internal/model"
 	"github.com/landru29/dump1090/internal/processor"
 	"github.com/landru29/dump1090/internal/processor/decoder"
 	"github.com/landru29/dump1090/internal/serialize"
@@ -60,6 +62,17 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 
 			cmd.SetContext(ctx)
 
+			aircraftDB := database.NewElementStorage[model.ICAOAddr, model.Aircraft](
+				ctx,
+				database.ElementWithLifetime[model.ICAOAddr, model.Aircraft](config.DatabaseLifetime),
+				database.ElementWithCleanCycle[model.ICAOAddr, model.Aircraft](config.DatabaseLifetime),
+			)
+			messageDB := database.NewChainedStorage[model.ICAOAddr, model.Squitter](
+				ctx,
+				database.ChainedWithLifetime[model.ICAOAddr, model.Squitter](config.DatabaseLifetime),
+				database.ChainedWithCleanCycle[model.ICAOAddr, model.Squitter](config.DatabaseLifetime),
+			)
+
 			serializers := map[string]serialize.Serializer{}
 
 			vesselType, ok := map[string]nmea.VesselType{
@@ -85,7 +98,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 			transporters := []transport.Transporter{}
 
 			if httpConf.addr != "" {
-				httpTransport, err := http.New(ctx, httpConf.addr, httpConf.apiPath, availableSerializers)
+				httpTransport, err := http.New(ctx, httpConf.addr, httpConf.apiPath, aircraftDB, availableSerializers)
 				if err != nil {
 					return err
 				}
@@ -135,20 +148,27 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 				transporters = append(transporters, screen.Transporter{})
 			}
 
+			decoderCfg := []decoder.Configurator{
+				decoder.WithDatabaseLifetime(config.DatabaseLifetime),
+				// decoder.WithChecksumCheck(),
+			}
+			for _, transporter := range transporters {
+				decoderCfg = append(decoderCfg, decoder.WithTransporter(transporter))
+			}
+
 			app, err = application.New(
-				ctx,
 				log,
 				&config,
 				[]processor.Processer{
 					decoder.New(
 						ctx,
 						log,
-						decoder.WithDatabaseLifetime(config.DatabaseLifetime),
-						// decoder.WithChecksumCheck(),
+						decoderCfg...,
 					),
 					// raw.New(log),
 				},
-				transporters,
+				aircraftDB,
+				messageDB,
 			)
 
 			return err

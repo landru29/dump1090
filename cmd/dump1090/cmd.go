@@ -2,28 +2,18 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
-	"github.com/landru29/dump1090/cmd/logger"
 	"github.com/landru29/dump1090/internal/application"
 	"github.com/landru29/dump1090/internal/database"
+	"github.com/landru29/dump1090/internal/logger"
 	"github.com/landru29/dump1090/internal/model"
 	"github.com/landru29/dump1090/internal/processor"
 	"github.com/landru29/dump1090/internal/processor/decoder"
 	"github.com/landru29/dump1090/internal/serialize"
-	"github.com/landru29/dump1090/internal/serialize/basestation"
-	"github.com/landru29/dump1090/internal/serialize/json"
 	"github.com/landru29/dump1090/internal/serialize/nmea"
-	"github.com/landru29/dump1090/internal/serialize/none"
-	"github.com/landru29/dump1090/internal/serialize/text"
-	"github.com/landru29/dump1090/internal/transport"
-	"github.com/landru29/dump1090/internal/transport/file"
-	"github.com/landru29/dump1090/internal/transport/http"
 	"github.com/landru29/dump1090/internal/transport/net"
-	"github.com/landru29/dump1090/internal/transport/screen"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +23,7 @@ const (
 	defaultDatabaseLifetime time.Duration = time.Minute
 )
 
-func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
+func rootCommand() *cobra.Command { //nolint: funlen
 	var (
 		app                  *application.App
 		config               application.Config
@@ -41,7 +31,7 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 		transportScreen      string
 		transportFile        string
 		nmeaMid              uint16
-		nmeaVessel           string
+		nmeaVessel           vessel = nmea.VesselTypeAircraft
 		availableSerializers []serialize.Serializer
 		loop                 bool
 	)
@@ -73,79 +63,24 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 				database.ChainedWithCleanCycle[model.ICAOAddr, model.Squitter](config.DatabaseLifetime),
 			)
 
-			serializers := map[string]serialize.Serializer{}
+			var serializers map[string]serialize.Serializer
 
-			vesselType, ok := map[string]nmea.VesselType{
-				"aircraft":   nmea.VesselTypeAircraft,
-				"helicopter": nmea.VesselTypeHelicopter,
-			}[nmeaVessel]
-			if !ok {
-				return fmt.Errorf("unknow vessel type %s", nmeaVessel)
-			}
+			serializers, availableSerializers = provideSerializers(log, nmea.VesselType(nmeaVessel), nmeaMid)
 
-			availableSerializers = []serialize.Serializer{
-				none.Serializer{},
-				json.Serializer{},
-				text.Serializer{},
-				basestation.Serializer{},
-				nmea.New(vesselType, nmeaMid),
-			}
-
-			for _, serializer := range availableSerializers {
-				serializers[serializer.String()] = serializer
-			}
-
-			transporters := []transport.Transporter{}
-
-			if httpConf.addr != "" {
-				httpTransport, err := http.New(ctx, httpConf.addr, httpConf.apiPath, aircraftDB, availableSerializers)
-				if err != nil {
-					return err
-				}
-				transporters = append(transporters, httpTransport)
-
-				cmd.Printf("API on http://%s%s\n", httpConf.addr, httpConf.apiPath)
-			}
-
-			if udpConf.IsValid() {
-				udpTransport, err := net.New(ctx, serializers, udpConf, cmd.OutOrStdout())
-				if err != nil {
-					return err
-				}
-				transporters = append(transporters, udpTransport)
-			}
-
-			if tcpConf.IsValid() {
-				tcpTransport, err := net.New(ctx, serializers, tcpConf, cmd.OutOrStdout())
-				if err != nil {
-					return err
-				}
-				transporters = append(transporters, tcpTransport)
-			}
-
-			if transportScreen != "" {
-				screenTransport, err := screen.New(serializers[transportScreen])
-				if err != nil {
-					return err
-				}
-
-				transporters = append(transporters, screenTransport)
-			}
-
-			if transportFile != "" {
-				splitter := strings.Split(transportFile, "@")
-				if len(splitter) > 1 {
-					fileTransport, err := file.New(ctx, strings.Join(splitter[1:], "@"), serializers[splitter[0]])
-					if err != nil {
-						return err
-					}
-
-					transporters = append(transporters, fileTransport)
-				}
-			}
-
-			if len(transporters) == 0 {
-				transporters = append(transporters, screen.Transporter{})
+			transporters, err := provideTransporters(
+				ctx,
+				log,
+				availableSerializers,
+				serializers,
+				aircraftDB,
+				httpConf,
+				udpConf,
+				tcpConf,
+				transportScreen,
+				transportFile,
+			)
+			if err != nil {
+				return err
 			}
 
 			decoderCfg := []decoder.Configurator{
@@ -153,6 +88,8 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 				// decoder.WithChecksumCheck(),
 			}
 			for _, transporter := range transporters {
+				log.Info("loading transporter", "name", transporter.String())
+
 				decoderCfg = append(decoderCfg, decoder.WithTransporter(transporter))
 			}
 
@@ -263,11 +200,10 @@ func rootCommand() *cobra.Command { //nolint: funlen,gocognit,cyclop,maintidx
 		"format to display output on the screen (json|nmea|text|none)",
 	)
 
-	rootCommand.PersistentFlags().StringVarP(
+	rootCommand.PersistentFlags().VarP(
 		&nmeaVessel,
 		"nmea-vessel",
 		"",
-		"aircraft",
 		"MMSI vessel (aircraft|helicopter)",
 	)
 

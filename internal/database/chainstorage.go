@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/landru29/dump1090/cmd/logger"
+	"github.com/landru29/dump1090/internal/logger"
 )
 
 // ChainedStorage is the database storage.

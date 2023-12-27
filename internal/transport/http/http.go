@@ -107,3 +107,8 @@ func (t *Transporter) serveData(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("content-type", requestedMimeType)
 	_, _ = writer.Write(output)
 }
+
+// String implements the transport.Transporter interface.
+func (t *Transporter) String() string {
+	return "http"
+}

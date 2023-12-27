@@ -55,3 +55,8 @@ func New(ctx context.Context, filename string, serializer serialize.Serializer) 
 		fileDesc:   file,
 	}, nil
 }
+
+// String implements the transport.Transporter interface.
+func (t Transporter) String() string {
+	return "file"
+}

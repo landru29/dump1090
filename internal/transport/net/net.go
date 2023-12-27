@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"sync"
 
 	localerrors "github.com/landru29/dump1090/internal/errors"
+	"github.com/landru29/dump1090/internal/logger"
 	"github.com/landru29/dump1090/internal/model"
 	"github.com/landru29/dump1090/internal/serialize"
 	"github.com/pkg/errors"
@@ -21,10 +23,10 @@ const (
 
 // Transporter is the udp transporter.
 type Transporter struct {
-	clients   []io.WriteCloser
-	formater  serialize.Serializer
-	mutex     sync.Mutex
-	outWriter io.Writer
+	clients  []io.WriteCloser
+	formater serialize.Serializer
+	mutex    sync.Mutex
+	log      *slog.Logger
 }
 
 // New creates a net transporter.
@@ -32,14 +34,14 @@ func New(
 	ctx context.Context,
 	formater map[string]serialize.Serializer,
 	conf ProtocolConfig,
-	outputLog io.Writer,
+	log *slog.Logger,
 ) (*Transporter, error) {
 	if formater == nil {
 		return nil, errNoValidFormater
 	}
 
-	if outputLog == nil {
-		outputLog = io.Discard
+	if log == nil {
+		return nil, logger.ErrMissingLogger
 	}
 
 	serial, found := formater[conf.format]
@@ -48,22 +50,22 @@ func New(
 	}
 
 	output := &Transporter{
-		formater:  serial,
-		outWriter: outputLog,
+		formater: serial,
+		log:      log,
 	}
 
 	switch conf.direction {
 	case protocolBind:
-		return output, output.Bind(ctx, conf.protocolType, conf.addr, outputLog)
+		return output, output.Bind(ctx, conf.protocolType, conf.addr)
 	case protocolDial:
-		return output, output.Dial(ctx, conf.protocolType, conf.addr, outputLog)
+		return output, output.Dial(ctx, conf.protocolType, conf.addr)
 	}
 
 	return nil, fmt.Errorf("unknown %s: specify 'dial' or 'bind'", conf.direction)
 }
 
 // Bind is the net binder.
-func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
+func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string) error {
 	splitter := strings.Split(addr, ":")
 	port := splitter[len(splitter)-1]
 
@@ -72,7 +74,9 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 		return err
 	}
 
-	fmt.Fprintf(outputLog, "Listening %s on port %s\n", strings.ToUpper(string(pType)), port)
+	log := t.log.With("type", string(pType), "port", port)
+
+	log.Info("net listening")
 
 	go func() {
 		for {
@@ -93,7 +97,7 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 					return
 				}
 
-				fmt.Fprintf(outputLog, "Accept connection from %s\n", conn.RemoteAddr())
+				log.Info("accept connection", "from", conn.RemoteAddr().String())
 
 				t.mutex.Lock()
 				t.clients = append(t.clients, conn)
@@ -106,8 +110,10 @@ func (t *Transporter) Bind(ctx context.Context, pType protocolType, addr string,
 }
 
 // Dial is the net dialer.
-func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string, outputLog io.Writer) error {
-	fmt.Fprintf(outputLog, "Dialing %s to %s\n", strings.ToUpper(string(pType)), addr)
+func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string) error {
+	log := t.log.With("type", string(pType), "to", addr)
+
+	log.Info("dialing")
 
 	server, err := net.Dial(string(pType), addr)
 	if err != nil {
@@ -124,7 +130,7 @@ func (t *Transporter) Dial(ctx context.Context, pType protocolType, addr string,
 
 	t.clients = append(t.clients, server)
 
-	fmt.Fprintf(outputLog, "Connection accepted\n")
+	log.Info("connection accepted")
 
 	return nil
 }
@@ -154,7 +160,7 @@ func (t *Transporter) Transport(ac *model.Aircraft) error {
 		_, err = client.Write(data)
 
 		if err != nil {
-			fmt.Fprintf(t.outWriter, "ERR: %s\n", err)
+			t.log.Error("client error", "msg", err)
 
 			hasError = true
 
@@ -175,4 +181,9 @@ func (t *Transporter) close() {
 		_ = client.Close()
 	}
 	t.mutex.Unlock()
+}
+
+// String implements the transport.Transporter interface.
+func (t *Transporter) String() string {
+	return "net"
 }

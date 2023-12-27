@@ -12,10 +12,12 @@ type httpConfig struct {
 
 const defaulthttpAPIpath = "/api"
 
+// String implements the pflag.Value interface.
 func (h *httpConfig) String() string {
 	return fmt.Sprintf("%s%s", h.addr, h.apiPath)
 }
 
+// Set implements the pflag.Value interface.
 func (h *httpConfig) Set(str string) error {
 	splitter := strings.Split(str, "/")
 	if len(splitter) > 1 {
@@ -37,6 +39,7 @@ func (h *httpConfig) Set(str string) error {
 	return nil
 }
 
+// Type implements the pflag.Value interface.
 func (h *httpConfig) Type() string {
 	return "http configuration"
 }

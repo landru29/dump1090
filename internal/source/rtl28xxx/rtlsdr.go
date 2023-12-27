@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/landru29/dump1090/cmd/logger"
+	"github.com/landru29/dump1090/internal/logger"
 	"github.com/landru29/dump1090/internal/processor"
 	localcontext "github.com/landru29/dump1090/internal/source/context"
 )

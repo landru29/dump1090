@@ -4,6 +4,13 @@ package logger
 import (
 	"context"
 	"log/slog"
+
+	"github.com/landru29/dump1090/internal/errors"
+)
+
+const (
+	// ErrMissingLogger is when the logger is missing.
+	ErrMissingLogger errors.Error = "missing logger"
 )
 
 type logContext struct{}

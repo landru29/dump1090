@@ -39,3 +39,8 @@ func New(serializer serialize.Serializer) (*Transporter, error) {
 		serializer: serializer,
 	}, nil
 }
+
+// String implements the transport.Transporter interface.
+func (t Transporter) String() string {
+	return "screen"
+}

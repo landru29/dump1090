@@ -7,11 +7,12 @@
 #include "../context/context.h"
 
 #define RAW 0
-#define DEBUG 0
+#define DEBUG 1
 
 
 int messageLengthBit[25];
 uint16_t magnitude[129*129];
+int globalIndex = 0;
 
 
 void printValue(uint16_t val) {
@@ -21,6 +22,8 @@ void printValue(uint16_t val) {
             printf("=");
         }
         printf(">\n");
+
+        fflush(stdout);
     }
 }
 
@@ -65,7 +68,7 @@ uint16_t* computeMagnitudes(unsigned char *byteBuffer, uint32_t byteBufferLength
         magnitudeBuffer[idx+startIdx] = magnitude[i*129+q];
     }
 
-    *size = magnitudeBufferLengthByte/2;
+    *size = magnitudeBufferLengthByte / sizeof(uint16_t);
 
     return magnitudeBuffer;
 }
@@ -79,6 +82,10 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
 
     uint32_t magnitudeBufferLengthByte = magnitudeCount * 2;
 
+    int idx;
+
+    int limitProcess = magnitudeCount - MAGNITUDE_LONG_MSG_SIZE - PREAMBULE_BIT_SIZE;
+
     // Signature detection:
     //       |   |         |   |
     //       |   |         |   |
@@ -86,11 +93,11 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
     //       |   |         |   |
     //       | | | | | | | | | | | | | | | |
     //       0 1 2 3 4 5 6 7 8 9 10
-    for(int idx = 0; idx<magnitudeCount - MAGNITUDE_LONG_MSG_SIZE; idx++)  {
+    for(idx = 0; idx<limitProcess; idx++)  {
         if (RAW) {
             printRawValue(magnitudeBuffer[idx]);
         } else if (DEBUG) {
-            printf("[foo] magnitude %04x  ", magnitudeBuffer[idx]);
+            printf("%04d (%04d / %04d) magnitude %04x  ", globalIndex + idx, idx, magnitudeCount, magnitudeBuffer[idx]);
             printValue(magnitudeBuffer[idx]);
         }
 
@@ -158,69 +165,93 @@ void rtlsdrProcessRaw(unsigned char *byteBuffer, uint32_t byteBufferLength, void
         if (
             (magnitudeBuffer[idx]/meanHigh>2) || 
             (magnitudeBuffer[idx+2]/meanHigh>2) || 
-            (magnitudeBuffer[idx+2]/meanHigh>7) || 
+            (magnitudeBuffer[idx+7]/meanHigh>2) || 
             (magnitudeBuffer[idx+9]/meanHigh>2)
             ) {
             continue;
         }
 
         if ((!RAW) && (DEBUG)) {
-            printf("[foo] _____________________________________________________________________________________________ good preambule ________________________________________________________________________________________\n");
+            printf("%04d [foo] _____________________________________________________________________________________________ good preambule ________________________________________________________________________________________\n", globalIndex+idx);
   
-            for(int k=1; k<16; k++) {
-                printf("[foo] magnitude %04x  ", magnitudeBuffer[idx+k]);
+            for(int k=0; k<16; k++) {
+                printf("    %04d (%04d / %04d) magnitude %04x  ", globalIndex +idx + k, idx + k, magnitudeCount, magnitudeBuffer[idx+k]);
                 printValue(magnitudeBuffer[idx+k]);
             }
 
             printf("\n\n");
+            fflush(stdout);
         }
 
         // The preambule seems to be right, prepare the message variable.
-        memset(message, 0, 14);
+        int messageLengthBit = decodeMessage(&magnitudeBuffer[idx + PREAMBULE_BIT_SIZE], message); 
 
-        // skip the preambule of 8µs.
-        int startOfMessage = idx+16; 
-
-        int messageLength = MODES_SHORT_MSG_BITS;
-
-        // +----------+--------------+-----------+
-        // |  DF (5)  | (83) or (27) |  PI (24)  |
-        // +----------+--------------+-----------+
-
-        for(int index=0; index<messageLength; index++) {
-            int byteIndex = index / 8;
-            int bitIndex = index % 8;
-
-            unsigned char bit = (magnitudeBuffer[startOfMessage+index*2] > magnitudeBuffer[startOfMessage+index*2+1]);
-
-            // If the first bit of DF is 1, this means the message will be long 112 bits (extended squitter),
-            // otherwise, the message will be short 56 bits (normal squitter).
-            if ((index==0) && (bit==1)) {
-                messageLength = MODES_LONG_MSG_BITS;
+        if ((RAW) || (DEBUG)) {
+            for (int j=0; j<messageLengthBit/8; j++) {
+                printf("%02X", message[j]);
             }
-
-            message[byteIndex] |= bit << bitIndex;
+            printf("\n");
         }
 
-        if (!RAW) {
-            // No error ?
-            if (goRtlsrdData(message, messageLength / 8, ctx) == 0) {
-                // jump over the message.
-                idx += startOfMessage + messageLength *2;
-            } 
+        // No error ?
+        if (goRtlsrdData(message, messageLengthBit / 8, ctx) == 0) {
+            // jump over the message.
+            idx += PREAMBULE_BIT_SIZE + messageLengthBit * 2;
+            if ((RAW) || (DEBUG)) printf("Jumping to %04d (%04d + %04d = %04d)\n", idx, PREAMBULE_BIT_SIZE, messageLengthBit * 2, PREAMBULE_BIT_SIZE + messageLengthBit * 2);
         }
+
+        // No error ?
+        // if (goRtlsrdData(message, messageLengthBit / 8, ctx) == 0) {
+        //     // jump over the message.
+        //     idx += PREAMBULE_BIT_SIZE + messageLengthBit * 2;
+        //     if ((RAW) || (DEBUG)) printf("Jumping to %04d\n", idx);
+        // } else {
+            // idx += PREAMBULE_BIT_SIZE + messageLengthBit * 2;
+            // if ((RAW) || (DEBUG)) printf("Jumping to %04d (%04d + %04d = %04d)\n", idx, PREAMBULE_BIT_SIZE, messageLengthBit * 2, PREAMBULE_BIT_SIZE + messageLengthBit * 2);
+        // }
     }
 
     // Copy remaining data in the context.
     if (currentCtx->remainingMagnitudeData != 0) {
-        currentCtx->remainingMagnitudeLengthByte = MAGNITUDE_LONG_MSG_BYTE_SIZE;
+        currentCtx->remainingMagnitudeLengthByte = sizeof(uint16_t) * (magnitudeCount - idx);
+        printf("remaining %04d\n", currentCtx->remainingMagnitudeLengthByte);
         if ((!RAW) && (DEBUG)) {
-            printf("Copying data from %ld, size %d\n", (magnitudeCount - MAGNITUDE_LONG_MSG_SIZE) * sizeof(uint16_t), currentCtx->remainingMagnitudeLengthByte);
+            printf("Copying data from %ld, size %d\n", idx * sizeof(uint16_t), currentCtx->remainingMagnitudeLengthByte);
+            fflush(stdout);
         }
-        memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[magnitudeCount - MAGNITUDE_LONG_MSG_SIZE], MAGNITUDE_LONG_MSG_BYTE_SIZE);
+        memcpy(currentCtx->remainingMagnitudeData, &magnitudeBuffer[idx], currentCtx->remainingMagnitudeLengthByte);
+
+        globalIndex += idx;
     }
 
     free(magnitudeBuffer);
+}
+
+int decodeMessage(uint16_t* magnitudeBuffer, char * message) {
+    memset(message, 0, 14); 
+
+    int messageLengthBit = MODES_SHORT_MSG_BITS;
+
+    // +----------+--------------+-----------+
+    // |  DF (5)  | (83) or (27) |  PI (24)  |
+    // +----------+--------------+-----------+
+
+    for(int index=0; index<messageLengthBit; index++) {
+        int byteIndex = index / 8;
+        int bitIndex = index % 8;
+
+        unsigned char bit = (magnitudeBuffer[index*2] > magnitudeBuffer[index*2+1]);
+
+        // If the first bit of DF is 1, this means the message will be long 112 bits (extended squitter),
+        // otherwise, the message will be short 56 bits (normal squitter).
+        if ((index==0) && (bit==1)) {
+            messageLengthBit = MODES_LONG_MSG_BITS;
+        }
+
+        message[byteIndex] |= bit << (7 - bitIndex);
+    }
+
+    return messageLengthBit;
 }
 
 

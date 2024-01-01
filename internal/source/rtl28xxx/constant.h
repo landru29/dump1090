@@ -29,4 +29,7 @@
 // Number of bytes for a long message
 #define IQ_LONG_MSG_SIZE                MAGNITUDE_LONG_MSG_SIZE * IQ_SIZE
 
+// Size of the preambule in peaks.
+#define PREAMBULE_BIT_SIZE             16
+
 #endif

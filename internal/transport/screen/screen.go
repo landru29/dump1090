@@ -15,6 +15,10 @@ type Transporter struct {
 
 // Transport implements the transport.Transporter interface.
 func (t Transporter) Transport(ac *model.Aircraft) error {
+	if ac == nil {
+		return nil
+	}
+
 	data, err := t.serializer.Serialize(ac)
 	if err != nil {
 		return err
